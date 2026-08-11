@@ -15,6 +15,7 @@ import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellPengajuanIndexRouteImport } from './routes/_shell.pengajuan.index'
 import { Route as ShellPengajuanIdRouteImport } from './routes/_shell.pengajuan.$id'
 import { Route as ShellPengajuanBuatRouteImport } from './routes/_shell.pengajuan.buat'
+import { Route as ShellPersetujuanIndexRouteImport } from './routes/_shell.persetujuan.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +46,11 @@ const ShellPengajuanBuatRoute = ShellPengajuanBuatRouteImport.update({
   path: '/pengajuan/buat',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellPersetujuanIndexRoute = ShellPersetujuanIndexRouteImport.update({
+  id: '/persetujuan/',
+  path: '/persetujuan/',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
   '/pengajuan/': typeof ShellPengajuanIndexRoute
+  '/persetujuan/': typeof ShellPersetujuanIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
   '/pengajuan': typeof ShellPengajuanIndexRoute
+  '/persetujuan': typeof ShellPersetujuanIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,13 +76,25 @@ export interface FileRoutesById {
   '/_shell/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/_shell/pengajuan/buat': typeof ShellPengajuanBuatRoute
   '/_shell/pengajuan/': typeof ShellPengajuanIndexRoute
+  '/_shell/persetujuan/': typeof ShellPersetujuanIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/dashboard' | '/pengajuan/$id' | '/pengajuan/buat' | '/pengajuan/'
+    | '/'
+    | '/dashboard'
+    | '/pengajuan/$id'
+    | '/pengajuan/buat'
+    | '/pengajuan/'
+    | '/persetujuan/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/pengajuan/$id' | '/pengajuan/buat' | '/pengajuan'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/pengajuan/$id'
+    | '/pengajuan/buat'
+    | '/pengajuan'
+    | '/persetujuan'
   id:
     | '__root__'
     | '/'
@@ -83,6 +103,7 @@ export interface FileRouteTypes {
     | '/_shell/pengajuan/$id'
     | '/_shell/pengajuan/buat'
     | '/_shell/pengajuan/'
+    | '/_shell/persetujuan/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,6 +155,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellPengajuanBuatRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/persetujuan/': {
+      id: '/_shell/persetujuan/'
+      path: '/persetujuan'
+      fullPath: '/persetujuan/'
+      preLoaderRoute: typeof ShellPersetujuanIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
@@ -142,6 +170,7 @@ interface ShellRouteChildren {
   ShellPengajuanIdRoute: typeof ShellPengajuanIdRoute
   ShellPengajuanBuatRoute: typeof ShellPengajuanBuatRoute
   ShellPengajuanIndexRoute: typeof ShellPengajuanIndexRoute
+  ShellPersetujuanIndexRoute: typeof ShellPersetujuanIndexRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
@@ -149,6 +178,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellPengajuanIdRoute: ShellPengajuanIdRoute,
   ShellPengajuanBuatRoute: ShellPengajuanBuatRoute,
   ShellPengajuanIndexRoute: ShellPengajuanIndexRoute,
+  ShellPersetujuanIndexRoute: ShellPersetujuanIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
