@@ -60,10 +60,7 @@ function AuthPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-sidebar-primary sm:text-3xl lg:text-4xl">
             Sistem Pengadaan Barang
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-sidebar-foreground/80 sm:text-base">
-            Kelola pengajuan dan proses pengadaan barang kampus secara mudah, terstruktur, dan
-            transparan.
-          </p>
+         
 
           <ul className="mt-8 space-y-4">
             {[

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -52,72 +52,13 @@ function PengaturanPage() {
         subtitle="Kelola profil kampus, pengguna, dan preferensi sistem"
       />
 
-      <Tabs defaultValue="kampus" className="min-w-0">
+      <Tabs defaultValue="saya" className="min-w-0">
         <div className="table-scroll pb-1">
           <TabsList className="w-max">
-            <TabsTrigger value="kampus">Profil Kampus</TabsTrigger>
             <TabsTrigger value="saya">Profil Saya</TabsTrigger>
             <TabsTrigger value="pengguna">Pengguna &amp; Role</TabsTrigger>
-            <TabsTrigger value="sistem">Sistem</TabsTrigger>
-            <TabsTrigger value="notifikasi">Notifikasi</TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="kampus" className="mt-4">
-          <Panel judul="Profil Kampus">
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                toast.success("Profil kampus disimpan");
-              }}
-            >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="namaKampus">Nama Kampus</Label>
-                  <Input id="namaKampus" defaultValue="Universitas Nusantara" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="emailKampus">Email</Label>
-                  <Input
-                    id="emailKampus"
-                    type="email"
-                    defaultValue="pengadaan@kampus.ac.id"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="telp">Nomor Telepon</Label>
-                  <Input id="telp" type="tel" defaultValue="(021) 555-0123" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="logo">Logo Kampus</Label>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Input id="logo" type="file" accept="image/*" className="min-w-0" />
-                    <Button type="button" variant="outline" className="w-full sm:w-auto">
-                      <Upload className="size-4" aria-hidden /> Unggah
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-1.5 md:col-span-2">
-                  <Label htmlFor="alamat">Alamat</Label>
-                  <Textarea
-                    id="alamat"
-                    rows={3}
-                    defaultValue="Jl. Pendidikan No. 45, Depok, Jawa Barat 16424"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <Button type="button" variant="outline" className="w-full sm:w-auto">
-                  Batal
-                </Button>
-                <Button type="submit" className="w-full sm:w-auto">
-                  Simpan
-                </Button>
-              </div>
-            </form>
-          </Panel>
-        </TabsContent>
 
         <TabsContent value="saya" className="mt-4 space-y-4 sm:space-y-6">
           <Panel judul="Profil Saya">
@@ -210,7 +151,6 @@ function PengaturanPage() {
                     <th className="px-5 py-3 font-medium">Unit</th>
                     <th className="px-5 py-3 font-medium">Role</th>
                     <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 text-right font-medium">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,21 +170,6 @@ function PengaturanPage() {
                         >
                           {u.aktif ? "Aktif" : "Nonaktif"}
                         </span>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" aria-label={`Edit ${u.nama}`}>
-                            <Pencil className="size-4" aria-hidden />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Hapus ${u.nama}`}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="size-4" aria-hidden />
-                          </Button>
-                        </div>
                       </td>
                     </tr>
                   ))}
@@ -273,93 +198,6 @@ function PengaturanPage() {
                   <p className="text-sm text-muted-foreground">
                     {u.unit} · {u.role}
                   </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-destructive hover:text-destructive"
-                    >
-                      Hapus
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </TabsContent>
-
-        <TabsContent value="sistem" className="mt-4">
-          <Panel judul="Pengaturan Sistem">
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                toast.success("Pengaturan sistem disimpan");
-              }}
-            >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="namaSistem">Nama Sistem</Label>
-                  <Input id="namaSistem" defaultValue="Sistem Pengadaan Barang Kampus" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="formatPengajuan">Format Nomor Pengajuan</Label>
-                  <Input id="formatPengajuan" defaultValue="PB-{TAHUN}-{URUT:5}" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="formatPengadaan">Format Nomor Pengadaan</Label>
-                  <Input id="formatPengadaan" defaultValue="PGD-{TAHUN}-{URUT:4}" />
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <Button type="submit" className="w-full sm:w-auto">
-                  Simpan
-                </Button>
-              </div>
-            </form>
-          </Panel>
-        </TabsContent>
-
-        <TabsContent value="notifikasi" className="mt-4">
-          <Panel judul="Pengaturan Notifikasi" deskripsi="Pilih notifikasi yang ingin Anda terima">
-            <ul className="divide-y divide-border">
-              {[
-                {
-                  id: "n1",
-                  judul: "Pengajuan baru masuk",
-                  ket: "Dikirim saat ada pengajuan baru pada unit Anda.",
-                  aktif: true,
-                },
-                {
-                  id: "n2",
-                  judul: "Pengajuan membutuhkan persetujuan",
-                  ket: "Dikirim saat pengajuan menunggu keputusan Anda.",
-                  aktif: true,
-                },
-                {
-                  id: "n3",
-                  judul: "Perubahan status pengadaan",
-                  ket: "Dikirim saat pengadaan mulai diproses atau selesai.",
-                  aktif: true,
-                },
-                {
-                  id: "n4",
-                  judul: "Ringkasan mingguan melalui email",
-                  ket: "Rekap aktivitas pengadaan setiap hari Senin.",
-                  aktif: false,
-                },
-              ].map((n) => (
-                <li key={n.id} className="flex items-start justify-between gap-4 py-4 first:pt-0">
-                  <div className="min-w-0">
-                    <Label htmlFor={n.id} className="text-sm font-medium">
-                      {n.judul}
-                    </Label>
-                    <p className="mt-1 text-xs text-muted-foreground">{n.ket}</p>
-                  </div>
-                  <Switch id={n.id} defaultChecked={n.aktif} className="mt-1 shrink-0" />
                 </li>
               ))}
             </ul>
@@ -388,6 +226,10 @@ function PengaturanPage() {
             <div className="space-y-1.5">
               <Label htmlFor="emailBaru">Email</Label>
               <Input id="emailBaru" type="email" required />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="passwordBaru">Kata Sandi</Label>
+              <Input id="passwordBaru" type="password" required />
             </div>
             <div className="space-y-1.5">
               <Label>Unit</Label>
