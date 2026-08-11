@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellLaporanRouteImport } from './routes/_shell.laporan'
 import { Route as ShellPengadaanIndexRouteImport } from './routes/_shell.pengadaan.index'
 import { Route as ShellPengadaanIdRouteImport } from './routes/_shell.pengadaan.$id'
 import { Route as ShellPengajuanIndexRouteImport } from './routes/_shell.pengajuan.index'
@@ -32,6 +33,11 @@ const ShellRoute = ShellRouteImport.update({
 const ShellDashboardRoute = ShellDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellLaporanRoute = ShellLaporanRouteImport.update({
+  id: '/laporan',
+  path: '/laporan',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellPengadaanIndexRoute = ShellPengadaanIndexRouteImport.update({
@@ -73,6 +79,7 @@ const ShellPersetujuanIdRoute = ShellPersetujuanIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/laporan': typeof ShellLaporanRoute
   '/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/laporan': typeof ShellLaporanRoute
   '/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
   '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/laporan': typeof ShellLaporanRoute
   '/_shell/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/_shell/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/_shell/pengajuan/buat': typeof ShellPengajuanBuatRoute
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/laporan'
     | '/pengadaan/$id'
     | '/pengajuan/$id'
     | '/pengajuan/buat'
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/laporan'
     | '/pengadaan/$id'
     | '/pengajuan/$id'
     | '/pengajuan/buat'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_shell'
     | '/_shell/dashboard'
+    | '/_shell/laporan'
     | '/_shell/pengadaan/$id'
     | '/_shell/pengajuan/$id'
     | '/_shell/pengajuan/buat'
@@ -168,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof ShellDashboardRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/laporan': {
+      id: '/_shell/laporan'
+      path: '/laporan'
+      fullPath: '/laporan'
+      preLoaderRoute: typeof ShellLaporanRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/pengadaan/': {
@@ -224,6 +243,7 @@ declare module '@tanstack/react-router' {
 
 interface ShellRouteChildren {
   ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellLaporanRoute: typeof ShellLaporanRoute
   ShellPengadaanIdRoute: typeof ShellPengadaanIdRoute
   ShellPengajuanIdRoute: typeof ShellPengajuanIdRoute
   ShellPengajuanBuatRoute: typeof ShellPengajuanBuatRoute
@@ -235,6 +255,7 @@ interface ShellRouteChildren {
 
 const ShellRouteChildren: ShellRouteChildren = {
   ShellDashboardRoute: ShellDashboardRoute,
+  ShellLaporanRoute: ShellLaporanRoute,
   ShellPengadaanIdRoute: ShellPengadaanIdRoute,
   ShellPengajuanIdRoute: ShellPengajuanIdRoute,
   ShellPengajuanBuatRoute: ShellPengajuanBuatRoute,
