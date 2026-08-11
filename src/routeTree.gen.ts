@@ -10,33 +10,165 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShellRouteImport } from './routes/_shell'
+import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellLaporanRouteImport } from './routes/_shell.laporan'
+import { Route as ShellPengaturanRouteImport } from './routes/_shell.pengaturan'
+import { Route as ShellPengadaanIndexRouteImport } from './routes/_shell.pengadaan.index'
+import { Route as ShellPengadaanIdRouteImport } from './routes/_shell.pengadaan.$id'
+import { Route as ShellPengajuanIndexRouteImport } from './routes/_shell.pengajuan.index'
+import { Route as ShellPengajuanIdRouteImport } from './routes/_shell.pengajuan.$id'
+import { Route as ShellPengajuanBuatRouteImport } from './routes/_shell.pengajuan.buat'
+import { Route as ShellPersetujuanIndexRouteImport } from './routes/_shell.persetujuan.index'
+import { Route as ShellPersetujuanIdRouteImport } from './routes/_shell.persetujuan.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShellRoute = ShellRouteImport.update({
+  id: '/_shell',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShellDashboardRoute = ShellDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellLaporanRoute = ShellLaporanRouteImport.update({
+  id: '/laporan',
+  path: '/laporan',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengaturanRoute = ShellPengaturanRouteImport.update({
+  id: '/pengaturan',
+  path: '/pengaturan',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengadaanIndexRoute = ShellPengadaanIndexRouteImport.update({
+  id: '/pengadaan/',
+  path: '/pengadaan/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengadaanIdRoute = ShellPengadaanIdRouteImport.update({
+  id: '/pengadaan/$id',
+  path: '/pengadaan/$id',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengajuanIndexRoute = ShellPengajuanIndexRouteImport.update({
+  id: '/pengajuan/',
+  path: '/pengajuan/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengajuanIdRoute = ShellPengajuanIdRouteImport.update({
+  id: '/pengajuan/$id',
+  path: '/pengajuan/$id',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengajuanBuatRoute = ShellPengajuanBuatRouteImport.update({
+  id: '/pengajuan/buat',
+  path: '/pengajuan/buat',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPersetujuanIndexRoute = ShellPersetujuanIndexRouteImport.update({
+  id: '/persetujuan/',
+  path: '/persetujuan/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPersetujuanIdRoute = ShellPersetujuanIdRouteImport.update({
+  id: '/persetujuan/$id',
+  path: '/persetujuan/$id',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof ShellDashboardRoute
+  '/laporan': typeof ShellLaporanRoute
+  '/pengaturan': typeof ShellPengaturanRoute
+  '/pengadaan/$id': typeof ShellPengadaanIdRoute
+  '/pengajuan/$id': typeof ShellPengajuanIdRoute
+  '/pengajuan/buat': typeof ShellPengajuanBuatRoute
+  '/persetujuan/$id': typeof ShellPersetujuanIdRoute
+  '/pengadaan/': typeof ShellPengadaanIndexRoute
+  '/pengajuan/': typeof ShellPengajuanIndexRoute
+  '/persetujuan/': typeof ShellPersetujuanIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof ShellDashboardRoute
+  '/laporan': typeof ShellLaporanRoute
+  '/pengaturan': typeof ShellPengaturanRoute
+  '/pengadaan/$id': typeof ShellPengadaanIdRoute
+  '/pengajuan/$id': typeof ShellPengajuanIdRoute
+  '/pengajuan/buat': typeof ShellPengajuanBuatRoute
+  '/persetujuan/$id': typeof ShellPersetujuanIdRoute
+  '/pengadaan': typeof ShellPengadaanIndexRoute
+  '/pengajuan': typeof ShellPengajuanIndexRoute
+  '/persetujuan': typeof ShellPersetujuanIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_shell': typeof ShellRouteWithChildren
+  '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/laporan': typeof ShellLaporanRoute
+  '/_shell/pengaturan': typeof ShellPengaturanRoute
+  '/_shell/pengadaan/$id': typeof ShellPengadaanIdRoute
+  '/_shell/pengajuan/$id': typeof ShellPengajuanIdRoute
+  '/_shell/pengajuan/buat': typeof ShellPengajuanBuatRoute
+  '/_shell/persetujuan/$id': typeof ShellPersetujuanIdRoute
+  '/_shell/pengadaan/': typeof ShellPengadaanIndexRoute
+  '/_shell/pengajuan/': typeof ShellPengajuanIndexRoute
+  '/_shell/persetujuan/': typeof ShellPersetujuanIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/laporan'
+    | '/pengaturan'
+    | '/pengadaan/$id'
+    | '/pengajuan/$id'
+    | '/pengajuan/buat'
+    | '/persetujuan/$id'
+    | '/pengadaan/'
+    | '/pengajuan/'
+    | '/persetujuan/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/laporan'
+    | '/pengaturan'
+    | '/pengadaan/$id'
+    | '/pengajuan/$id'
+    | '/pengajuan/buat'
+    | '/persetujuan/$id'
+    | '/pengadaan'
+    | '/pengajuan'
+    | '/persetujuan'
+  id:
+    | '__root__'
+    | '/'
+    | '/_shell'
+    | '/_shell/dashboard'
+    | '/_shell/laporan'
+    | '/_shell/pengaturan'
+    | '/_shell/pengadaan/$id'
+    | '/_shell/pengajuan/$id'
+    | '/_shell/pengajuan/buat'
+    | '/_shell/persetujuan/$id'
+    | '/_shell/pengadaan/'
+    | '/_shell/pengajuan/'
+    | '/_shell/persetujuan/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ShellRoute: typeof ShellRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +180,118 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_shell': {
+      id: '/_shell'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ShellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_shell/dashboard': {
+      id: '/_shell/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof ShellDashboardRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/laporan': {
+      id: '/_shell/laporan'
+      path: '/laporan'
+      fullPath: '/laporan'
+      preLoaderRoute: typeof ShellLaporanRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengaturan': {
+      id: '/_shell/pengaturan'
+      path: '/pengaturan'
+      fullPath: '/pengaturan'
+      preLoaderRoute: typeof ShellPengaturanRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengadaan/': {
+      id: '/_shell/pengadaan/'
+      path: '/pengadaan'
+      fullPath: '/pengadaan/'
+      preLoaderRoute: typeof ShellPengadaanIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengadaan/$id': {
+      id: '/_shell/pengadaan/$id'
+      path: '/pengadaan/$id'
+      fullPath: '/pengadaan/$id'
+      preLoaderRoute: typeof ShellPengadaanIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengajuan/': {
+      id: '/_shell/pengajuan/'
+      path: '/pengajuan'
+      fullPath: '/pengajuan/'
+      preLoaderRoute: typeof ShellPengajuanIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengajuan/$id': {
+      id: '/_shell/pengajuan/$id'
+      path: '/pengajuan/$id'
+      fullPath: '/pengajuan/$id'
+      preLoaderRoute: typeof ShellPengajuanIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengajuan/buat': {
+      id: '/_shell/pengajuan/buat'
+      path: '/pengajuan/buat'
+      fullPath: '/pengajuan/buat'
+      preLoaderRoute: typeof ShellPengajuanBuatRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/persetujuan/': {
+      id: '/_shell/persetujuan/'
+      path: '/persetujuan'
+      fullPath: '/persetujuan/'
+      preLoaderRoute: typeof ShellPersetujuanIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/persetujuan/$id': {
+      id: '/_shell/persetujuan/$id'
+      path: '/persetujuan/$id'
+      fullPath: '/persetujuan/$id'
+      preLoaderRoute: typeof ShellPersetujuanIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
+interface ShellRouteChildren {
+  ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellLaporanRoute: typeof ShellLaporanRoute
+  ShellPengaturanRoute: typeof ShellPengaturanRoute
+  ShellPengadaanIdRoute: typeof ShellPengadaanIdRoute
+  ShellPengajuanIdRoute: typeof ShellPengajuanIdRoute
+  ShellPengajuanBuatRoute: typeof ShellPengajuanBuatRoute
+  ShellPersetujuanIdRoute: typeof ShellPersetujuanIdRoute
+  ShellPengadaanIndexRoute: typeof ShellPengadaanIndexRoute
+  ShellPengajuanIndexRoute: typeof ShellPengajuanIndexRoute
+  ShellPersetujuanIndexRoute: typeof ShellPersetujuanIndexRoute
+}
+
+const ShellRouteChildren: ShellRouteChildren = {
+  ShellDashboardRoute: ShellDashboardRoute,
+  ShellLaporanRoute: ShellLaporanRoute,
+  ShellPengaturanRoute: ShellPengaturanRoute,
+  ShellPengadaanIdRoute: ShellPengadaanIdRoute,
+  ShellPengajuanIdRoute: ShellPengajuanIdRoute,
+  ShellPengajuanBuatRoute: ShellPengajuanBuatRoute,
+  ShellPersetujuanIdRoute: ShellPersetujuanIdRoute,
+  ShellPengadaanIndexRoute: ShellPengadaanIndexRoute,
+  ShellPengajuanIndexRoute: ShellPengajuanIndexRoute,
+  ShellPersetujuanIndexRoute: ShellPersetujuanIndexRoute,
+}
+
+const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ShellRoute: ShellRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
