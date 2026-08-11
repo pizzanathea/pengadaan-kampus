@@ -34,7 +34,6 @@ const MENU = [
   { label: "Persetujuan", to: "/persetujuan", icon: CheckSquare },
   { label: "Proses Pengadaan", to: "/pengadaan", icon: PackageSearch },
   { label: "Laporan", to: "/laporan", icon: BarChart3 },
-  { label: "Pengaturan", to: "/pengaturan", icon: Settings },
 ] as const;
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -43,9 +42,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="grid size-9 shrink-0 place-items-center rounded-md bg-sidebar-accent text-sm font-bold text-sidebar-accent-foreground">
-          SP
-        </div>
+        <img
+          src="/logo-ipti.png"
+          alt="Logo IPTI"
+          className="size-9 shrink-0 object-contain rounded-md"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-sidebar-primary">Sistem Pengadaan</p>
           <p className="truncate text-xs text-sidebar-foreground/70">Barang Kampus</p>
@@ -82,16 +83,26 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </nav>
 
-      <div className="shrink-0 border-t border-sidebar-border p-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
-            BS
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-sidebar-primary">Budi Santoso</p>
-            <p className="truncate text-xs text-sidebar-foreground/70">Administrator</p>
-          </div>
-        </div>
+      <div className="shrink-0 border-t border-sidebar-border p-3">
+        {(() => {
+          const aktif = pathname === "/pengaturan" || pathname.startsWith("/pengaturan/");
+          return (
+            <Link
+              to="/pengaturan"
+              onClick={onNavigate}
+              aria-current={aktif ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                aktif
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <Settings className="size-4 shrink-0" aria-hidden />
+              <span className="truncate">Pengaturan</span>
+            </Link>
+          );
+        })()}
       </div>
     </div>
   );
@@ -160,8 +171,10 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
   const [cariMobile, setCariMobile] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  
+  const allMenuItems = [...MENU, { label: "Pengaturan", to: "/pengaturan", icon: Settings }];
   const judul =
-    MENU.find((m) => pathname === m.to || pathname.startsWith(m.to + "/"))?.label ?? "Dashboard";
+    allMenuItems.find((m) => pathname === m.to || pathname.startsWith(m.to + "/"))?.label ?? "Dashboard";
 
   return (
     <div className="flex min-h-screen w-full bg-background">
