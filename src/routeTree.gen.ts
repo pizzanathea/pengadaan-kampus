@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellLaporanRouteImport } from './routes/_shell.laporan'
+import { Route as ShellPengaturanRouteImport } from './routes/_shell.pengaturan'
 import { Route as ShellPengadaanIndexRouteImport } from './routes/_shell.pengadaan.index'
 import { Route as ShellPengadaanIdRouteImport } from './routes/_shell.pengadaan.$id'
 import { Route as ShellPengajuanIndexRouteImport } from './routes/_shell.pengajuan.index'
@@ -38,6 +39,11 @@ const ShellDashboardRoute = ShellDashboardRouteImport.update({
 const ShellLaporanRoute = ShellLaporanRouteImport.update({
   id: '/laporan',
   path: '/laporan',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengaturanRoute = ShellPengaturanRouteImport.update({
+  id: '/pengaturan',
+  path: '/pengaturan',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellPengadaanIndexRoute = ShellPengadaanIndexRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
   '/laporan': typeof ShellLaporanRoute
+  '/pengaturan': typeof ShellPengaturanRoute
   '/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
   '/laporan': typeof ShellLaporanRoute
+  '/pengaturan': typeof ShellPengaturanRoute
   '/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/_shell': typeof ShellRouteWithChildren
   '/_shell/dashboard': typeof ShellDashboardRoute
   '/_shell/laporan': typeof ShellLaporanRoute
+  '/_shell/pengaturan': typeof ShellPengaturanRoute
   '/_shell/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/_shell/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/_shell/pengajuan/buat': typeof ShellPengajuanBuatRoute
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/laporan'
+    | '/pengaturan'
     | '/pengadaan/$id'
     | '/pengajuan/$id'
     | '/pengajuan/buat'
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/laporan'
+    | '/pengaturan'
     | '/pengadaan/$id'
     | '/pengajuan/$id'
     | '/pengajuan/buat'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/_shell'
     | '/_shell/dashboard'
     | '/_shell/laporan'
+    | '/_shell/pengaturan'
     | '/_shell/pengadaan/$id'
     | '/_shell/pengajuan/$id'
     | '/_shell/pengajuan/buat'
@@ -187,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/laporan'
       fullPath: '/laporan'
       preLoaderRoute: typeof ShellLaporanRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pengaturan': {
+      id: '/_shell/pengaturan'
+      path: '/pengaturan'
+      fullPath: '/pengaturan'
+      preLoaderRoute: typeof ShellPengaturanRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/pengadaan/': {
@@ -244,6 +263,7 @@ declare module '@tanstack/react-router' {
 interface ShellRouteChildren {
   ShellDashboardRoute: typeof ShellDashboardRoute
   ShellLaporanRoute: typeof ShellLaporanRoute
+  ShellPengaturanRoute: typeof ShellPengaturanRoute
   ShellPengadaanIdRoute: typeof ShellPengadaanIdRoute
   ShellPengajuanIdRoute: typeof ShellPengajuanIdRoute
   ShellPengajuanBuatRoute: typeof ShellPengajuanBuatRoute
@@ -256,6 +276,7 @@ interface ShellRouteChildren {
 const ShellRouteChildren: ShellRouteChildren = {
   ShellDashboardRoute: ShellDashboardRoute,
   ShellLaporanRoute: ShellLaporanRoute,
+  ShellPengaturanRoute: ShellPengaturanRoute,
   ShellPengadaanIdRoute: ShellPengadaanIdRoute,
   ShellPengajuanIdRoute: ShellPengajuanIdRoute,
   ShellPengajuanBuatRoute: ShellPengajuanBuatRoute,
