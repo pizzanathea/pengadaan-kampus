@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellPengajuanIndexRouteImport } from './routes/_shell.pengajuan.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -27,27 +28,35 @@ const ShellDashboardRoute = ShellDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellPengajuanIndexRoute = ShellPengajuanIndexRouteImport.update({
+  id: '/pengajuan/',
+  path: '/pengajuan/',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/pengajuan/': typeof ShellPengajuanIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/pengajuan': typeof ShellPengajuanIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
   '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/pengajuan/': typeof ShellPengajuanIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard'
+  fullPaths: '/' | '/dashboard' | '/pengajuan/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard'
-  id: '__root__' | '/' | '/_shell' | '/_shell/dashboard'
+  to: '/' | '/dashboard' | '/pengajuan'
+  id: '__root__' | '/' | '/_shell' | '/_shell/dashboard' | '/_shell/pengajuan/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -78,15 +87,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellDashboardRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/pengajuan/': {
+      id: '/_shell/pengajuan/'
+      path: '/pengajuan'
+      fullPath: '/pengajuan/'
+      preLoaderRoute: typeof ShellPengajuanIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
 interface ShellRouteChildren {
   ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellPengajuanIndexRoute: typeof ShellPengajuanIndexRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
   ShellDashboardRoute: ShellDashboardRoute,
+  ShellPengajuanIndexRoute: ShellPengajuanIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)

@@ -1,0 +1,370 @@
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Plus, Trash2, Upload, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Panel, PageHeader, Breadcrumb } from "@/components/ui-kit";
+import {
+  UNIT_LIST,
+  KATEGORI_LIST,
+  SATUAN_LIST,
+  PRIORITAS_LIST,
+  formatRupiah,
+} from "@/data/pengadaan";
+
+export const Route = createFileRoute("/_shell/pengajuan/buat")({
+  head: () => ({
+    meta: [
+      { title: "Buat Pengajuan Barang — Sistem Pengadaan Kampus" },
+      {
+        name: "description",
+        content:
+          "Formulir pengajuan barang kampus: informasi pengajuan, detail barang, alasan, lampiran, dan ringkasan estimasi biaya.",
+      },
+      { property: "og:title", content: "Buat Pengajuan Barang — Sistem Pengadaan Kampus" },
+      {
+        property: "og:description",
+        content: "Buat pengajuan kebutuhan barang unit atau fakultas Anda.",
+      },
+    ],
+  }),
+  component: BuatPengajuanPage,
+});
+
+type Baris = {
+  key: number;
+  nama: string;
+  kategori: string;
+  spesifikasi: string;
+  jumlah: number;
+  satuan: string;
+  harga: number;
+};
+
+const barisBaru = (key: number): Baris => ({
+  key,
+  nama: "",
+  kategori: KATEGORI_LIST[0],
+  spesifikasi: "",
+  jumlah: 1,
+  satuan: SATUAN_LIST[0],
+  harga: 0,
+});
+
+function BuatPengajuanPage() {
+  const navigate = useNavigate();
+  const [baris, setBaris] = useState<Baris[]>([barisBaru(1)]);
+  const [berkas, setBerkas] = useState<string[]>([]);
+
+  const ubah = (key: number, patch: Partial<Baris>) =>
+    setBaris((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
+
+  const totalBarang = baris.length;
+  const totalKuantitas = baris.reduce((s, b) => s + (b.jumlah || 0), 0);
+  const estimasiTotal = baris.reduce((s, b) => s + (b.jumlah || 0) * (b.harga || 0), 0);
+
+  return (
+    <>
+      <Breadcrumb
+        items={[
+          { label: "Pengajuan Barang", to: "/pengajuan" },
+          { label: "Buat Pengajuan" },
+        ]}
+      />
+
+      <PageHeader
+        judul="Buat Pengajuan Barang"
+        subtitle="Lengkapi informasi pengajuan dan detail barang yang dibutuhkan"
+        aksi={
+          <Button variant="outline" asChild className="w-full sm:w-auto">
+            <Link to="/pengajuan">
+              <ArrowLeft className="size-4" aria-hidden /> Kembali
+            </Link>
+          </Button>
+        }
+      />
+
+      <form
+        className="space-y-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          toast.success("Pengajuan berhasil diajukan", {
+            description: "Pengajuan Anda diteruskan ke Kepala Unit untuk persetujuan.",
+          });
+          navigate({ to: "/pengajuan" });
+        }}
+      >
+        <Panel judul="Informasi Pengajuan">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="nomor">Nomor Pengajuan</Label>
+              <Input id="nomor" defaultValue="PB-2026-00126" readOnly className="bg-muted" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tglPengajuan">Tanggal Pengajuan</Label>
+              <Input id="tglPengajuan" type="date" defaultValue="2026-08-11" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pengaju">Nama Pengaju</Label>
+              <Input id="pengaju" defaultValue="Budi Santoso" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Unit / Fakultas</Label>
+              <Select defaultValue={UNIT_LIST[2]}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIT_LIST.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Prioritas</Label>
+              <Select defaultValue="Sedang">
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih prioritas" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITAS_LIST.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tglButuh">Tanggal Dibutuhkan</Label>
+              <Input id="tglButuh" type="date" defaultValue="2026-09-01" />
+            </div>
+          </div>
+        </Panel>
+
+        <Panel
+          judul="Detail Barang"
+          deskripsi="Tambahkan satu baris untuk setiap barang yang dibutuhkan"
+          aksi={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setBaris((prev) => [...prev, barisBaru(Date.now())])}
+            >
+              <Plus className="size-4" aria-hidden /> Tambah Barang
+            </Button>
+          }
+        >
+          <div className="space-y-4">
+            {baris.map((b, i) => (
+              <fieldset key={b.key} className="rounded-lg border border-border p-4">
+                <legend className="px-1 text-xs font-medium text-muted-foreground">
+                  Barang {i + 1}
+                </legend>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                  <div className="space-y-1.5 xl:col-span-2">
+                    <Label htmlFor={`nama-${b.key}`}>Nama Barang</Label>
+                    <Input
+                      id={`nama-${b.key}`}
+                      value={b.nama}
+                      onChange={(e) => ubah(b.key, { nama: e.target.value })}
+                      placeholder="Contoh: Laptop"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Kategori</Label>
+                    <Select
+                      value={b.kategori}
+                      onValueChange={(v) => ubah(b.key, { kategori: v })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {KATEGORI_LIST.map((k) => (
+                          <SelectItem key={k} value={k}>
+                            {k}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 xl:col-span-3">
+                    <Label htmlFor={`spek-${b.key}`}>Spesifikasi</Label>
+                    <Input
+                      id={`spek-${b.key}`}
+                      value={b.spesifikasi}
+                      onChange={(e) => ubah(b.key, { spesifikasi: e.target.value })}
+                      placeholder="Contoh: Core i7, RAM 16GB"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`jml-${b.key}`}>Jumlah</Label>
+                    <Input
+                      id={`jml-${b.key}`}
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={b.jumlah}
+                      onChange={(e) => ubah(b.key, { jumlah: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Satuan</Label>
+                    <Select value={b.satuan} onValueChange={(v) => ubah(b.key, { satuan: v })}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SATUAN_LIST.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`harga-${b.key}`}>Estimasi Harga</Label>
+                    <Input
+                      id={`harga-${b.key}`}
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={b.harga}
+                      onChange={(e) => ubah(b.key, { harga: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Total</Label>
+                    <p className="flex h-9 items-center rounded-md bg-muted px-3 text-sm font-medium break-all">
+                      {formatRupiah((b.jumlah || 0) * (b.harga || 0))}
+                    </p>
+                  </div>
+                  <div className="flex items-end xl:col-span-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={baris.length === 1}
+                      onClick={() => setBaris((prev) => prev.filter((x) => x.key !== b.key))}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" aria-hidden /> Hapus barang
+                    </Button>
+                  </div>
+                </div>
+              </fieldset>
+            ))}
+          </div>
+        </Panel>
+
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
+          <div className="space-y-4 sm:space-y-6 xl:col-span-2">
+            <Panel judul="Alasan Pengajuan">
+              <div className="space-y-1.5">
+                <Label htmlFor="alasan">Alasan / justifikasi kebutuhan</Label>
+                <Textarea
+                  id="alasan"
+                  rows={5}
+                  required
+                  placeholder="Jelaskan kebutuhan barang beserta manfaatnya bagi unit Anda"
+                />
+              </div>
+            </Panel>
+
+            <Panel judul="Lampiran" deskripsi="Format PDF, Excel, atau gambar. Maksimal 5 MB per file.">
+              <label
+                htmlFor="lampiran"
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center hover:bg-muted/50"
+              >
+                <Upload className="size-5 text-muted-foreground" aria-hidden />
+                <span className="text-sm font-medium">Pilih dokumen untuk diunggah</span>
+                <span className="text-xs text-muted-foreground">
+                  atau tarik dan lepas file ke area ini
+                </span>
+                <input
+                  id="lampiran"
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) =>
+                    setBerkas(Array.from(e.target.files ?? []).map((f) => f.name))
+                  }
+                />
+              </label>
+              {berkas.length > 0 ? (
+                <ul className="mt-3 space-y-2">
+                  {berkas.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                    >
+                      <span className="truncate">{f}</span>
+                      <button
+                        type="button"
+                        onClick={() => setBerkas((prev) => prev.filter((x) => x !== f))}
+                        className="shrink-0 text-xs font-medium text-destructive"
+                      >
+                        Hapus
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </Panel>
+          </div>
+
+          <Panel judul="Ringkasan">
+            <dl className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Total Barang</dt>
+                <dd className="font-medium">{totalBarang}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Total Kuantitas</dt>
+                <dd className="font-medium">{totalKuantitas}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                <dt className="text-muted-foreground">Estimasi Total</dt>
+                <dd className="text-right text-base font-semibold break-all">
+                  {formatRupiah(estimasiTotal)}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row xl:flex-col">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => toast.success("Pengajuan disimpan sebagai draf")}
+              >
+                Simpan sebagai Draf
+              </Button>
+              <Button type="submit" className="w-full">
+                Ajukan Pengadaan
+              </Button>
+            </div>
+          </Panel>
+        </div>
+      </form>
+    </>
+  );
+}
