@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellPengadaanIndexRouteImport } from './routes/_shell.pengadaan.index'
+import { Route as ShellPengadaanIdRouteImport } from './routes/_shell.pengadaan.$id'
 import { Route as ShellPengajuanIndexRouteImport } from './routes/_shell.pengajuan.index'
 import { Route as ShellPengajuanIdRouteImport } from './routes/_shell.pengajuan.$id'
 import { Route as ShellPengajuanBuatRouteImport } from './routes/_shell.pengajuan.buat'
@@ -36,6 +37,11 @@ const ShellDashboardRoute = ShellDashboardRouteImport.update({
 const ShellPengadaanIndexRoute = ShellPengadaanIndexRouteImport.update({
   id: '/pengadaan/',
   path: '/pengadaan/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPengadaanIdRoute = ShellPengadaanIdRouteImport.update({
+  id: '/pengadaan/$id',
+  path: '/pengadaan/$id',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellPengajuanIndexRoute = ShellPengajuanIndexRouteImport.update({
@@ -67,6 +73,7 @@ const ShellPersetujuanIdRoute = ShellPersetujuanIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
   '/persetujuan/$id': typeof ShellPersetujuanIdRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/pengajuan/buat': typeof ShellPengajuanBuatRoute
   '/persetujuan/$id': typeof ShellPersetujuanIdRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
   '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/pengadaan/$id': typeof ShellPengadaanIdRoute
   '/_shell/pengajuan/$id': typeof ShellPengajuanIdRoute
   '/_shell/pengajuan/buat': typeof ShellPengajuanBuatRoute
   '/_shell/persetujuan/$id': typeof ShellPersetujuanIdRoute
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/pengadaan/$id'
     | '/pengajuan/$id'
     | '/pengajuan/buat'
     | '/persetujuan/$id'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/pengadaan/$id'
     | '/pengajuan/$id'
     | '/pengajuan/buat'
     | '/persetujuan/$id'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_shell'
     | '/_shell/dashboard'
+    | '/_shell/pengadaan/$id'
     | '/_shell/pengajuan/$id'
     | '/_shell/pengajuan/buat'
     | '/_shell/persetujuan/$id'
@@ -165,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellPengadaanIndexRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/pengadaan/$id': {
+      id: '/_shell/pengadaan/$id'
+      path: '/pengadaan/$id'
+      fullPath: '/pengadaan/$id'
+      preLoaderRoute: typeof ShellPengadaanIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/pengajuan/': {
       id: '/_shell/pengajuan/'
       path: '/pengajuan'
@@ -205,6 +224,7 @@ declare module '@tanstack/react-router' {
 
 interface ShellRouteChildren {
   ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellPengadaanIdRoute: typeof ShellPengadaanIdRoute
   ShellPengajuanIdRoute: typeof ShellPengajuanIdRoute
   ShellPengajuanBuatRoute: typeof ShellPengajuanBuatRoute
   ShellPersetujuanIdRoute: typeof ShellPersetujuanIdRoute
@@ -215,6 +235,7 @@ interface ShellRouteChildren {
 
 const ShellRouteChildren: ShellRouteChildren = {
   ShellDashboardRoute: ShellDashboardRoute,
+  ShellPengadaanIdRoute: ShellPengadaanIdRoute,
   ShellPengajuanIdRoute: ShellPengajuanIdRoute,
   ShellPengajuanBuatRoute: ShellPengajuanBuatRoute,
   ShellPersetujuanIdRoute: ShellPersetujuanIdRoute,
