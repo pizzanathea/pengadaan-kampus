@@ -73,11 +73,6 @@ function DashboardPage() {
             Ringkasan aktivitas pengadaan barang kampus
           </p>
         </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link to="/pengajuan/buat">
-            <Plus className="size-4" aria-hidden /> Buat Pengajuan
-          </Link>
-        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">

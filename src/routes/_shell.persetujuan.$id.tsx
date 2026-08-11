@@ -49,6 +49,8 @@ function DetailPersetujuanPage() {
   const p = getPengajuan(id);
   const [tolakTerbuka, setTolakTerbuka] = useState(false);
   const [alasanTolak, setAlasanTolak] = useState("");
+  const [perbaikanTerbuka, setPerbaikanTerbuka] = useState(false);
+  const [alasanPerbaikan, setAlasanPerbaikan] = useState("");
 
   if (!p) {
     return (
@@ -106,11 +108,7 @@ function DetailPersetujuanPage() {
           <Button
             variant="outline"
             className="w-full sm:w-auto"
-            onClick={() =>
-              toast.success("Permintaan perbaikan dikirim", {
-                description: "Pengaju akan menerima notifikasi untuk memperbaiki pengajuan.",
-              })
-            }
+            onClick={() => setPerbaikanTerbuka(true)}
           >
             <RotateCcw className="size-4" aria-hidden /> Minta Perbaikan
           </Button>
@@ -124,6 +122,51 @@ function DetailPersetujuanPage() {
         </div>
       </Panel>
 
+      {/* Dialog Minta Perbaikan */}
+      <Dialog open={perbaikanTerbuka} onOpenChange={setPerbaikanTerbuka}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md sm:w-full">
+          <DialogHeader>
+            <DialogTitle>Catatan Perbaikan</DialogTitle>
+            <DialogDescription>
+              Jelaskan bagian yang perlu diperbaiki agar pengaju dapat segera merevisinya.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="alasanPerbaikan">Alasan / Catatan</Label>
+            <Textarea
+              id="alasanPerbaikan"
+              rows={4}
+              value={alasanPerbaikan}
+              onChange={(e) => setAlasanPerbaikan(e.target.value)}
+              placeholder="Contoh: Spesifikasi barang kurang detail, mohon dilampirkan tautan katalog."
+            />
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setPerbaikanTerbuka(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              disabled={!alasanPerbaikan.trim()}
+              onClick={() => {
+                setPerbaikanTerbuka(false);
+                toast.success("Permintaan perbaikan dikirim", {
+                  description: `Pengaju akan menerima notifikasi untuk merevisi ${p.nomor}.`,
+                });
+                navigate({ to: "/persetujuan" });
+              }}
+            >
+              Kirim Permintaan Perbaikan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Tolak Pengajuan */}
       <Dialog open={tolakTerbuka} onOpenChange={setTolakTerbuka}>
         <DialogContent className="w-[calc(100vw-2rem)] max-w-md sm:w-full">
           <DialogHeader>
