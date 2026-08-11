@@ -198,17 +198,6 @@ function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="unit">Unit / Fakultas</Label>
-                  <Input
-                    id="unit"
-                    type="text"
-                    placeholder="Contoh: Fakultas Teknik"
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="sandi-daftar">Kata Sandi</Label>
                   <Input
                     id="sandi-daftar"
