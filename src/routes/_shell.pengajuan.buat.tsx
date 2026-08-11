@@ -55,10 +55,10 @@ type Baris = {
 const barisBaru = (key: number): Baris => ({
   key,
   nama: "",
-  kategori: KATEGORI_LIST[0],
+  kategori: "Elektronik",
   spesifikasi: "",
   jumlah: 1,
-  satuan: SATUAN_LIST[0],
+  satuan: "Unit",
   harga: 0,
 });
 
@@ -121,7 +121,7 @@ function BuatPengajuanPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Unit / Fakultas</Label>
-              <Select defaultValue={UNIT_LIST[2]}>
+              <Select defaultValue="Fakultas Ilmu Komputer">
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih unit" />
                 </SelectTrigger>
