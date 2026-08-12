@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageHeader, Panel } from "@/components/ui-kit";
-import { PENGGUNA, ROLE_LIST, UNIT_LIST } from "@/data/pengadaan";
+import { PENGGUNA, ROLE_LIST, UNIT_LIST as INITIAL_UNIT_LIST } from "@/data/pengadaan";
 
 export const Route = createFileRoute("/_shell/pengaturan")({
   head: () => ({
@@ -44,12 +44,35 @@ export const Route = createFileRoute("/_shell/pengaturan")({
 
 function PengaturanPage() {
   const [tambahTerbuka, setTambahTerbuka] = useState(false);
+  
+  // State untuk manajemen Unit
+  const [unitList, setUnitList] = useState<string[]>(INITIAL_UNIT_LIST);
+  const [tambahUnitTerbuka, setTambahUnitTerbuka] = useState(false);
+  const [namaUnitBaru, setNamaUnitBaru] = useState("");
+
+  const handleTambahUnit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!namaUnitBaru.trim()) return;
+    if (unitList.includes(namaUnitBaru.trim())) {
+      toast.error("Unit sudah terdaftar");
+      return;
+    }
+    setUnitList([...unitList, namaUnitBaru.trim().toString()]);
+    setNamaUnitBaru("");
+    setTambahUnitTerbuka(false);
+    toast.success("Unit berhasil ditambahkan");
+  };
+
+  const handleHapusUnit = (unitTarget: string) => {
+    setUnitList(unitList.filter((u) => u !== unitTarget));
+    toast.success(`Unit ${unitTarget} berhasil dihapus`);
+  };
 
   return (
     <>
       <PageHeader
         judul="Pengaturan"
-        subtitle="Kelola profil kampus, pengguna, dan preferensi sistem"
+        subtitle="Kelola profil kampus, pengguna, unit, dan preferensi sistem"
       />
 
       <Tabs defaultValue="saya" className="min-w-0">
@@ -57,6 +80,7 @@ function PengaturanPage() {
           <TabsList className="w-max">
             <TabsTrigger value="saya">Profil Saya</TabsTrigger>
             <TabsTrigger value="pengguna">Pengguna &amp; Role</TabsTrigger>
+            <TabsTrigger value="unit">Manajemen Unit</TabsTrigger>
           </TabsList>
         </div>
 
@@ -203,8 +227,68 @@ function PengaturanPage() {
             </ul>
           </Panel>
         </TabsContent>
+
+        {/* Tab Baru: Manajemen Unit */}
+        <TabsContent value="unit" className="mt-4">
+          <Panel
+            judul="Daftar Unit / Fakultas"
+            deskripsi="Kelola daftar unit atau departemen dalam sistem pengadaan"
+            aksi={
+              <Button size="sm" onClick={() => setTambahUnitTerbuka(true)}>
+                <Plus className="size-4" aria-hidden /> Tambah Unit
+              </Button>
+            }
+            padat
+          >
+            <div className="table-scroll hidden md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
+                    <th className="px-5 py-3 font-medium">Nama Unit</th>
+                    <th className="px-5 py-3 text-right font-medium">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unitList.map((unitName) => (
+                    <tr key={unitName} className="border-b border-border last:border-0">
+                      <td className="px-5 py-3 font-medium">{unitName}</td>
+                      <td className="px-5 py-3 text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Hapus ${unitName}`}
+                          className="text-destructive hover:text-destructive size-8"
+                          onClick={() => handleHapusUnit(unitName)}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-border md:hidden">
+              {unitList.map((unitName) => (
+                <li key={unitName} className="flex items-center justify-between p-4">
+                  <p className="text-sm font-medium">{unitName}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive h-8 px-2"
+                    onClick={() => handleHapusUnit(unitName)}
+                  >
+                    Hapus
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </TabsContent>
       </Tabs>
 
+      {/* Dialog Tambah Pengguna */}
       <Dialog open={tambahTerbuka} onOpenChange={setTambahTerbuka}>
         <DialogContent className="w-[calc(100vw-2rem)] max-w-lg sm:w-full">
           <DialogHeader>
@@ -233,12 +317,12 @@ function PengaturanPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Unit</Label>
-              <Select defaultValue="Fakultas Teknik">
+              <Select defaultValue={unitList[0] || ""}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {UNIT_LIST.map((u) => (
+                  {unitList.map((u) => (
                     <SelectItem key={u} value={u}>
                       {u}
                     </SelectItem>
@@ -271,6 +355,39 @@ function PengaturanPage() {
               Batal
             </Button>
             <Button type="submit" form="formPengguna" className="w-full sm:w-auto">
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Tambah Unit */}
+      <Dialog open={tambahUnitTerbuka} onOpenChange={setTambahUnitTerbuka}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md sm:w-full">
+          <DialogHeader>
+            <DialogTitle>Tambah Unit Baru</DialogTitle>
+          </DialogHeader>
+          <form id="formUnit" onSubmit={handleTambahUnit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="namaUnit">Nama Unit / Fakultas</Label>
+              <Input
+                id="namaUnit"
+                value={namaUnitBaru}
+                onChange={(e) => setNamaUnitBaru(e.target.value)}
+                placeholder="Contoh: Fakultas Hukum"
+                required
+              />
+            </div>
+          </form>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setTambahUnitTerbuka(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" form="formUnit" className="w-full sm:w-auto">
               Simpan
             </Button>
           </DialogFooter>
