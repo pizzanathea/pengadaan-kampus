@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Printer, AlertCircle, Plus, Trash2, Save, Pencil } from "lucide-react";
+import { ArrowLeft, Printer, AlertCircle, Plus, Trash2, Save, Pencil, Eye, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ function DetailPengajuanPage() {
             setP(found);
             setBarangList(found.daftarBarang || []);
             setAlasan(found.alasan || "");
-            setLampiranList(found.lampiran || ["proposal-kegiatan.pdf"]);
+            setLampiranList(found.lampiran || []);
           }
         }
       })
@@ -97,12 +97,12 @@ function DetailPengajuanPage() {
     pengaju: p.namaPengaju || "-",
     tanggal: p.tanggalPengajuan || "",
     barang: barangList,
+    lampiran: lampiranList,
   };
 
   const statusStr = p.statusApproval || "";
   const isDitolak = statusStr.toLowerCase().includes("tolak") || statusStr.toLowerCase().includes("rejected");
 
-  // Fungsi untuk menyimpan perubahan ke backend database
   const handleSimpanPerubahan = async () => {
     const updatedPayload = {
       ...p,
@@ -339,27 +339,67 @@ function DetailPengajuanPage() {
             </div>
 
             <div className="space-y-2">
-              {lampiranList.map((file, idx) => {
-                const fileName = typeof file === "object" && file !== null ? (file.nama || file.name || JSON.stringify(file)) : file;
-                return (
-                  <div key={idx} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm bg-muted/40">
-                    <span className="truncate font-medium">{fileName}</span>
-                    {isEditLampiran && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive h-8 px-2"
-                        onClick={() => {
-                          setLampiranList(lampiranList.filter((_, i) => i !== idx));
-                        }}
-                      >
-                        Hapus
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
+              {lampiranList.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Belum ada berkas lampiran yang diunggah.</p>
+              ) : (
+                lampiranList.map((file, idx) => {
+                  const fileName = typeof file === "object" && file !== null ? (file.nama || file.name || JSON.stringify(file)) : file;
+                  return (
+                    <div key={idx} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm bg-muted/40">
+                      <span className="truncate font-medium">{fileName}</span>
+                      <div className="flex items-center gap-1">
+                        {/* Tombol Lihat (Mata) */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                          title="Lihat / Pratinjau Lampiran"
+                          onClick={() => {
+                            toast.info(`Membuka lampiran: ${fileName}`);
+                          }}
+                        >
+                          <Eye className="size-4" />
+                        </Button>
+
+                        {/* Tombol Hapus jika mode edit aktif */}
+                        {isEditLampiran && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive h-8 px-2"
+                            onClick={() => {
+                              setLampiranList(lampiranList.filter((_, i) => i !== idx));
+                            }}
+                          >
+                            Hapus
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+
+            {/* Input tambah lampiran baru ketika mode edit aktif */}
+            {isEditLampiran && (
+              <div className="pt-2">
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border p-4 text-center hover:bg-muted/50">
+                  <Upload className="size-4 text-muted-foreground" />
+                  <span className="text-xs font-medium">Tambah file lampiran baru</span>
+                  <input
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []).map((f) => f.name);
+                      setLampiranList((prev) => [...prev, ...files]);
+                      toast.success("File berhasil ditambahkan ke daftar lampiran");
+                    }}
+                  />
+                </label>
+              </div>
+            )}
           </div>
         </div>
       </Panel>

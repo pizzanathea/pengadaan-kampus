@@ -28,6 +28,7 @@ const pengajuanSchema = new mongoose.Schema(
       default: "Menunggu Review" 
     },
     catatanAdmin: { type: String, default: "" },
+    lampiran: [{ type: String }],
   },
   { timestamps: true }
 );

@@ -29,13 +29,7 @@ export const Route = createFileRoute("/_shell/pengajuan/buat")({
       { title: "Buat Pengajuan Barang — Sistem Pengadaan Kampus" },
       {
         name: "description",
-        content:
-          "Formulir pengajuan barang kampus: informasi pengajuan, detail barang, alasan, lampiran, dan ringkasan estimasi biaya.",
-      },
-      { property: "og:title", content: "Buat Pengajuan Barang — Sistem Pengadaan Kampus" },
-      {
-        property: "og:description",
-        content: "Buat pengajuan kebutuhan barang unit atau fakultas Anda.",
+        content: "Formulir pengajuan barang kampus.",
       },
     ],
   }),
@@ -49,7 +43,7 @@ type Baris = {
   spesifikasi: string;
   jumlah: number;
   satuan: string;
-  harga: number;
+  harga: string;
 };
 
 const barisBaru = (key: number): Baris => ({
@@ -59,25 +53,36 @@ const barisBaru = (key: number): Baris => ({
   spesifikasi: "",
   jumlah: 1,
   satuan: "Unit",
-  harga: 0,
+  harga: "",
 });
 
 function BuatPengajuanPage() {
   const navigate = useNavigate();
   const [baris, setBaris] = useState<Baris[]>([barisBaru(1)]);
+  
+  // State lampiran diubah menampung nama file yang diunggah
   const [berkas, setBerkas] = useState<string[]>([]);
 
-  // Generate nomor pengajuan unik otomatis agar tidak duplikat di database
   const [nomorUnik] = useState(
     `PB-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
   );
+  const [tanggalPengajuan, setTanggalPengajuan] = useState("");
+  const [namaPengaju, setNamaPengaju] = useState("");
+  const [unitFakultas, setUnitFakultas] = useState("");
+  const [prioritas, setPrioritas] = useState("Sedang");
+  const [tanggalDibutuhkan, setTanggalDibutuhkan] = useState("");
+  const [alasan, setAlasan] = useState("");
 
   const ubah = (key: number, patch: Partial<Baris>) =>
     setBaris((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
 
   const totalBarang = baris.length;
-  const totalKuantitas = baris.reduce((s, b) => s + (b.jumlah || 0), 0);
-  const estimasiTotal = baris.reduce((s, b) => s + (b.jumlah || 0) * (b.harga || 0), 0);
+  const totalKuantitas = baris.reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
+  
+  const estimasiTotal = baris.reduce((s, b) => {
+    const hargaNum = Number(String(b.harga).replace(/[^0-9]/g, "")) || 0;
+    return s + (Number(b.jumlah) || 0) * hargaNum;
+  }, 0);
 
   return (
     <>
@@ -105,16 +110,22 @@ function BuatPengajuanPage() {
         onSubmit={async (e) => {
           e.preventDefault();
 
-          // Bungkus data form sesuai struktur backend
+          const daftarBarangPayload = baris.map((b) => ({
+            ...b,
+            harga: Number(String(b.harga).replace(/[^0-9]/g, "")) || 0,
+          }));
+
+          // Masukkan array nama file 'berkas' ke dalam payload
           const payload = {
             nomorPengajuan: nomorUnik,
-            tanggalPengajuan: "2026-08-11",
-            namaPengaju: "Budi Santoso",
-            unitFakultas: "Fakultas Ilmu Komputer",
-            prioritas: "Sedang",
-            tanggalDibutuhkan: "2026-09-01",
-            daftarBarang: baris,
-            alasan: (document.getElementById("alasan") as HTMLTextAreaElement).value,
+            tanggalPengajuan,
+            namaPengaju,
+            unitFakultas,
+            prioritas,
+            tanggalDibutuhkan,
+            daftarBarang: daftarBarangPayload,
+            alasan,
+            lampiran: berkas, // Menyertakan lampiran ke database
           };
 
           try {
@@ -128,7 +139,7 @@ function BuatPengajuanPage() {
 
             if (result.success) {
               toast.success("Pengajuan berhasil diajukan", {
-                description: "Pengajuan Anda berhasil disimpan ke database.",
+                description: "Pengajuan dan lampiran Anda berhasil disimpan ke database.",
               });
               navigate({ to: "/pengajuan" });
             } else {
@@ -147,17 +158,29 @@ function BuatPengajuanPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tglPengajuan">Tanggal Pengajuan</Label>
-              <Input id="tglPengajuan" type="date" defaultValue="2026-08-11" />
+              <Input
+                id="tglPengajuan"
+                type="date"
+                value={tanggalPengajuan}
+                onChange={(e) => setTanggalPengajuan(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pengaju">Nama Pengaju</Label>
-              <Input id="pengaju" defaultValue="Budi Santoso" required />
+              <Input
+                id="pengaju"
+                value={namaPengaju}
+                onChange={(e) => setNamaPengaju(e.target.value)}
+                placeholder="Masukkan nama lengkap"
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Unit / Fakultas</Label>
-              <Select defaultValue="Fakultas Ilmu Komputer">
+              <Select value={unitFakultas} onValueChange={setUnitFakultas}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih unit" />
+                  <SelectValue placeholder="Pilih unit atau fakultas" />
                 </SelectTrigger>
                 <SelectContent>
                   {UNIT_LIST.map((u) => (
@@ -170,9 +193,9 @@ function BuatPengajuanPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Prioritas</Label>
-              <Select defaultValue="Sedang">
+              <Select value={prioritas} onValueChange={setPrioritas}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih prioritas" />
+                  <SelectValue placeholder="Pilih tingkat prioritas" />
                 </SelectTrigger>
                 <SelectContent>
                   {PRIORITAS_LIST.map((p) => (
@@ -185,7 +208,13 @@ function BuatPengajuanPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tglButuh">Tanggal Dibutuhkan</Label>
-              <Input id="tglButuh" type="date" defaultValue="2026-09-01" />
+              <Input
+                id="tglButuh"
+                type="date"
+                value={tanggalDibutuhkan}
+                onChange={(e) => setTanggalDibutuhkan(e.target.value)}
+                required
+              />
             </div>
           </div>
         </Panel>
@@ -278,17 +307,16 @@ function BuatPengajuanPage() {
                     <Label htmlFor={`harga-${b.key}`}>Estimasi Harga</Label>
                     <Input
                       id={`harga-${b.key}`}
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
+                      type="text"
+                      placeholder="Contoh: 5000000"
                       value={b.harga}
-                      onChange={(e) => ubah(b.key, { harga: Number(e.target.value) })}
+                      onChange={(e) => ubah(b.key, { harga: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Total</Label>
                     <p className="flex h-9 items-center rounded-md bg-muted px-3 text-sm font-medium break-all">
-                      {formatRupiah((b.jumlah || 0) * (b.harga || 0))}
+                      {formatRupiah((Number(b.jumlah) || 0) * (Number(String(b.harga).replace(/[^0-9]/g, "")) || 0))}
                     </p>
                   </div>
                   <div className="flex items-end xl:col-span-3">
@@ -317,6 +345,8 @@ function BuatPengajuanPage() {
                 <Textarea
                   id="alasan"
                   rows={5}
+                  value={alasan}
+                  onChange={(e) => setAlasan(e.target.value)}
                   required
                   placeholder="Jelaskan kebutuhan barang beserta manfaatnya bagi unit Anda"
                 />
@@ -338,22 +368,24 @@ function BuatPengajuanPage() {
                   type="file"
                   multiple
                   className="sr-only"
-                  onChange={(e) =>
-                    setBerkas(Array.from(e.target.files ?? []).map((f) => f.name))
-                  }
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []).map((f) => f.name);
+                    // Menambahkan file baru ke state tanpa menimpa file sebelumnya
+                    setBerkas((prev) => [...prev, ...files]);
+                  }}
                 />
               </label>
               {berkas.length > 0 ? (
                 <ul className="mt-3 space-y-2">
-                  {berkas.map((f) => (
+                  {berkas.map((f, index) => (
                     <li
-                      key={f}
+                      key={index}
                       className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
                     >
                       <span className="truncate">{f}</span>
                       <button
                         type="button"
-                        onClick={() => setBerkas((prev) => prev.filter((x) => x !== f))}
+                        onClick={() => setBerkas((prev) => prev.filter((_, i) => i !== index))}
                         className="shrink-0 text-xs font-medium text-destructive"
                       >
                         Hapus
