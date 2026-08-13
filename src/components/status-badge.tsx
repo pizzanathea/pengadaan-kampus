@@ -4,6 +4,7 @@ import type { StatusPengadaan, StatusPengajuan } from "@/data/pengadaan";
 
 const KELAS: Record<string, string> = {
   menunggu: "bg-status-wait-bg text-status-wait ring-status-wait/20",
+  menunggu_2: "bg-status-process-bg text-status-process ring-status-process/20",
   "menunggu-proses": "bg-status-wait-bg text-status-wait ring-status-wait/20",
   disetujui: "bg-status-approved-bg text-status-approved ring-status-approved/20",
   ditolak: "bg-status-rejected-bg text-status-rejected ring-status-rejected/20",

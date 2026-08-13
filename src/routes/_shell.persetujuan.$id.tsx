@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -43,10 +50,16 @@ export const Route = createFileRoute("/_shell/persetujuan/$id")({
   component: DetailPersetujuanPage,
 });
 
+type Role = "persetujuan_1" | "persetujuan_2";
+
 function DetailPersetujuanPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const p = getPengajuan(id);
+
+  // TODO(auth): ganti dengan role dari session/auth beneran, lalu hapus toggle di bawah.
+  const [role, setRole] = useState<Role>("persetujuan_1");
+
   const [tolakTerbuka, setTolakTerbuka] = useState(false);
   const [alasanTolak, setAlasanTolak] = useState("");
   const [perbaikanTerbuka, setPerbaikanTerbuka] = useState(false);
@@ -68,8 +81,43 @@ function DetailPersetujuanPage() {
     );
   }
 
+  const isPersetujuan1 = role === "persetujuan_1";
+
+  const handleSetujui = () => {
+    if (isPersetujuan1) {
+      // Persetujuan 1 approve → status jadi "menunggu_2", BELUM final,
+      // pengajuan diteruskan ke Persetujuan Keuangan.
+      toast.success("Pengajuan disetujui", {
+        description: `${p.nomor} diteruskan ke Persetujuan Keuangan.`,
+      });
+    } else {
+      // Persetujuan 2 (Keuangan) approve → ini baru final, status jadi
+      // "disetujui" dan lanjut ke proses pengadaan.
+      toast.success("Pengajuan disetujui", {
+        description: `${p.nomor} diteruskan ke proses pengadaan.`,
+      });
+    }
+    // TODO(backend): update status pengajuan di sini —
+    // isPersetujuan1 ? "menunggu_2" : "disetujui"
+    navigate({ to: "/persetujuan" });
+  };
+
   return (
     <>
+      {/* ⚠️ Dev-only role switcher — HAPUS blok ini begitu auth/role dari backend udah jalan */}
+      <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
+        <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
+        <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+          <SelectTrigger className="h-8 w-[220px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="persetujuan_1">Persetujuan 1</SelectItem>
+            <SelectItem value="persetujuan_2">Persetujuan 2 (Keuangan)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Breadcrumb items={[{ label: "Persetujuan", to: "/persetujuan" }, { label: p.nomor }]} />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -94,16 +142,9 @@ function DetailPersetujuanPage() {
 
       <Panel judul="Tindakan Persetujuan" deskripsi="Pilih keputusan atas pengajuan ini">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => {
-              toast.success("Pengajuan disetujui", {
-                description: `${p.nomor} diteruskan ke proses pengadaan.`,
-              });
-              navigate({ to: "/persetujuan" });
-            }}
-          >
-            <Check className="size-4" aria-hidden /> Setujui Pengajuan
+          <Button className="w-full sm:w-auto" onClick={handleSetujui}>
+            <Check className="size-4" aria-hidden />
+            {isPersetujuan1 ? "Setujui & Teruskan ke Keuangan" : "Setujui & Proses Pengadaan"}
           </Button>
           <Button
             variant="outline"

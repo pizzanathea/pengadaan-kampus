@@ -30,43 +30,109 @@ export const Route = createFileRoute("/_shell/persetujuan/")({
       { title: "Persetujuan — Sistem Pengadaan Barang Kampus" },
       {
         name: "description",
-        content:
-          "Daftar pengajuan barang yang membutuhkan persetujuan Anda, lengkap dengan filter unit, prioritas, dan tanggal.",
-      },
-      { property: "og:title", content: "Persetujuan — Sistem Pengadaan Barang Kampus" },
-      {
-        property: "og:description",
-        content: "Pengajuan yang membutuhkan persetujuan Anda.",
+        content: "Daftar pengajuan barang yang membutuhkan persetujuan Anda.",
       },
     ],
   }),
   component: PersetujuanPage,
 });
 
+type Role = "persetujuan_1" | "persetujuan_2";
+
+// TODO(auth): ganti ini dengan role dari session/auth beneran begitu backend siap,
+// misal: const { role } = useAuth(); — hapus useState mock + toggle switcher di bawah.
+const ROLE_CONFIG: Record<
+  Role,
+  {
+    judul: string;
+    subtitle: string;
+    deskripsiPanel: string;
+    defaultStatus: string;
+    statusScope: string[];
+    statusOptions: { value: string; label: string }[];
+    emptyJudul: string;
+    emptyDeskripsi: string;
+  }
+> = {
+  persetujuan_1: {
+    judul: "Persetujuan",
+    subtitle: "Pengajuan yang membutuhkan persetujuan Anda",
+    deskripsiPanel: "Daftar Persetujuan",
+    defaultStatus: "menunggu",
+    statusScope: ["menunggu", "disetujui", "ditolak"],
+    statusOptions: [
+      { value: "menunggu", label: "Menunggu Persetujuan" },
+      { value: "disetujui", label: "Disetujui" },
+      { value: "ditolak", label: "Ditolak" },
+      { value: "semua", label: "Semua" },
+    ],
+    emptyJudul: "Tidak ada pengajuan",
+    emptyDeskripsi: "Belum ada pengajuan yang sesuai dengan filter yang dipilih.",
+  },
+  persetujuan_2: {
+    judul: "Persetujuan Keuangan",
+    subtitle: "Pengajuan yang sudah disetujui Persetujuan 1 dan menunggu persetujuan akhir Anda",
+    deskripsiPanel: "Daftar Persetujuan Keuangan",
+    defaultStatus: "menunggu_2",
+    statusScope: ["menunggu_2", "disetujui", "ditolak"],
+    statusOptions: [
+      { value: "menunggu_2", label: "Menunggu Persetujuan Keuangan" },
+      { value: "disetujui", label: "Disetujui" },
+      { value: "ditolak", label: "Ditolak" },
+      { value: "semua", label: "Semua" },
+    ],
+    emptyJudul: "Belum ada pengajuan",
+    emptyDeskripsi:
+      "Belum ada pengajuan yang lolos Persetujuan 1, atau tidak ada yang sesuai dengan filter yang dipilih.",
+  },
+};
+
 function PersetujuanPage() {
-  const [status, setStatus] = useState("menunggu");
+  // Mock role buat testing UI — nanti diganti auth. Default persetujuan_1.
+  const [role, setRole] = useState<Role>("persetujuan_1");
+  const config = ROLE_CONFIG[role];
+
+  const [status, setStatus] = useState(config.defaultStatus);
   const [unit, setUnit] = useState("semua");
   const [prioritas, setPrioritas] = useState("semua");
   const [tanggal, setTanggal] = useState("");
+
+  // Reset filter status ke default role setiap kali role-nya ganti (khusus mock testing)
+  const handleRoleChange = (r: Role) => {
+    setRole(r);
+    setStatus(ROLE_CONFIG[r].defaultStatus);
+  };
 
   const data = useMemo(
     () =>
       PENGAJUAN.filter(
         (p) =>
-          (status === "semua" ? ["menunggu", "disetujui", "ditolak"].includes(p.status) : p.status === status) &&
+          config.statusScope.includes(p.status) &&
+          (status === "semua" ? true : p.status === status) &&
           (unit === "semua" || p.unit === unit) &&
           (prioritas === "semua" || p.prioritas === prioritas) &&
           (!tanggal || p.tanggal === tanggal),
       ),
-    [status, unit, prioritas, tanggal],
+    [config, status, unit, prioritas, tanggal],
   );
 
   return (
     <>
-      <PageHeader
-        judul="Persetujuan"
-        subtitle="Pengajuan yang membutuhkan persetujuan Anda"
-      />
+      {/* ⚠️ Dev-only role switcher — HAPUS blok ini begitu auth/role dari backend udah jalan */}
+      <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
+        <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
+        <Select value={role} onValueChange={(v) => handleRoleChange(v as Role)}>
+          <SelectTrigger className="h-8 w-[220px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="persetujuan_1">Persetujuan 1</SelectItem>
+            <SelectItem value="persetujuan_2">Persetujuan 2 (Keuangan)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <PageHeader judul={config.judul} subtitle={config.subtitle} />
 
       <Panel>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -77,10 +143,11 @@ function PersetujuanPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="menunggu">Menunggu Persetujuan</SelectItem>
-                <SelectItem value="disetujui">Disetujui</SelectItem>
-                <SelectItem value="ditolak">Ditolak</SelectItem>
-                <SelectItem value="semua">Semua</SelectItem>
+                {config.statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -128,16 +195,9 @@ function PersetujuanPage() {
         </div>
       </Panel>
 
-      <Panel
-        judul="Daftar Persetujuan"
-        deskripsi={`${data.length} pengajuan ditampilkan`}
-        padat
-      >
+      <Panel judul={config.deskripsiPanel} deskripsi={`${data.length} pengajuan ditampilkan`} padat>
         {data.length === 0 ? (
-          <EmptyState
-            judul="Tidak ada pengajuan"
-            deskripsi="Belum ada pengajuan yang sesuai dengan filter yang dipilih."
-          />
+          <EmptyState judul={config.emptyJudul} deskripsi={config.emptyDeskripsi} />
         ) : (
           <>
             <div className="table-scroll hidden lg:block">
@@ -157,7 +217,10 @@ function PersetujuanPage() {
                 </thead>
                 <tbody>
                   {data.map((p) => (
-                    <tr key={p.nomor} className="border-b border-border last:border-0 hover:bg-muted/50">
+                    <tr
+                      key={p.nomor}
+                      className="border-b border-border last:border-0 hover:bg-muted/50"
+                    >
                       <td className="px-5 py-3 font-medium whitespace-nowrap">{p.nomor}</td>
                       <td className="px-5 py-3">{p.pengaju}</td>
                       <td className="px-5 py-3 text-muted-foreground">{p.unit}</td>

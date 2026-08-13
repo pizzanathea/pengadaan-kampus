@@ -53,9 +53,7 @@ export function DaftarBarang({ p }: { p: Pengajuan }) {
                 <td className="px-5 py-3 text-muted-foreground">{b.spesifikasi}</td>
                 <td className="px-5 py-3 text-right">{b.jumlah}</td>
                 <td className="px-5 py-3">{b.satuan}</td>
-                <td className="px-5 py-3 text-right whitespace-nowrap">
-                  {formatRupiah(b.harga)}
-                </td>
+                <td className="px-5 py-3 text-right whitespace-nowrap">{formatRupiah(b.harga)}</td>
                 <td className="px-5 py-3 text-right whitespace-nowrap font-medium">
                   {formatRupiah(b.harga * b.jumlah)}
                 </td>
@@ -133,21 +131,36 @@ export function AlasanDanLampiran({ p }: { p: Pengajuan }) {
 
 export function riwayatPengajuan(p: Pengajuan): LangkahTimeline[] {
   const dibuat = formatTanggal(p.tanggal);
-  const selesaiSemua = p.status === "selesai";
-  const disetujui = ["disetujui", "diproses", "selesai"].includes(p.status);
+
+  const ditolak = p.status === "ditolak";
+  // Lolos tahap 1 kalau statusnya udah lewat dari "menunggu" — baik lagi nunggu
+  // Keuangan, udah disetujui final, lagi diproses, atau udah selesai.
+  const lolosTahap1 = ["menunggu_2", "disetujui", "diproses", "selesai"].includes(p.status);
+  // Disetujui final artinya udah lolos tahap 2 (Keuangan).
+  const disetujuiFinal = ["disetujui", "diproses", "selesai"].includes(p.status);
   const diproses = ["diproses", "selesai"].includes(p.status);
+  const selesaiSemua = p.status === "selesai";
 
   return [
     { judul: "Pengajuan dibuat", oleh: p.pengaju, waktu: `${dibuat} — 08:30`, status: "selesai" },
     { judul: "Pengajuan diajukan", oleh: p.pengaju, waktu: `${dibuat} — 08:45`, status: "selesai" },
     {
-      judul: disetujui
-        ? "Pengajuan disetujui"
-        : p.status === "ditolak"
+      judul: lolosTahap1
+        ? "Disetujui Persetujuan 1"
+        : ditolak
           ? "Pengajuan ditolak"
-          : "Menunggu persetujuan",
-      oleh: "Kepala Unit",
-      status: disetujui || p.status === "ditolak" ? "selesai" : "aktif",
+          : "Menunggu Persetujuan 1",
+      oleh: "Persetujuan 1",
+      status: lolosTahap1 || ditolak ? "selesai" : "aktif",
+    },
+    {
+      judul: disetujuiFinal
+        ? "Disetujui Persetujuan Keuangan"
+        : ditolak
+          ? "Tidak diteruskan ke Keuangan"
+          : "Menunggu Persetujuan Keuangan",
+      oleh: "Persetujuan 2 (Keuangan)",
+      status: disetujuiFinal ? "selesai" : lolosTahap1 && !ditolak ? "aktif" : "menunggu",
     },
     {
       judul: "Proses pengadaan",
