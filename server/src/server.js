@@ -1,27 +1,22 @@
+require("dotenv").config(); // <-- BARIS INI WAJIB ADA DI PALING ATAS AGAR .env TERBACA
 const express = require("express");
-const dotenv = require("dotenv");
 const cors = require("cors");
-const connectDB = require("./config/db");
-
-// Load environment variables dari root server/.env
-dotenv.config();
-
-// Inisialisasi koneksi database MongoDB
-connectDB();
+const mongoose = require("mongoose");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware wajib
 app.use(cors());
 app.use(express.json());
 
-// Route uji coba
-app.get("/", (req, res) => {
-  res.json({ message: "API Sistem Pengadaan Kampus Berjalan!" });
-});
+// --- PASANG RUTE DI SINI ---
+const pengajuanRoutes = require("./routes/pengajuan.routes");
+app.use("/api/pengajuan", pengajuanRoutes);
 
-// Jalankan server
-app.listen(PORT, () => {
-  console.log(`Server berjalan di port ${PORT}`);
-});
+// Sambungkan ke MongoDB & Jalankan Server
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB Terhubung!");
+    app.listen(5000, () => console.log("Server berjalan di port 5000"));
+  })
+  .catch((err) => console.log(err));

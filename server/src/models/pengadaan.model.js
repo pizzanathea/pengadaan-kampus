@@ -1,59 +1,37 @@
 const mongoose = require("mongoose");
 
-// 1. Skema untuk Pengadaan Barang
-const pengadaanSchema = new mongoose.Schema(
-  {
-    kodePengajuan: { type: String, required: true, unique: true },
-    namaBarang: { type: String, required: true, trim: true },
-    kategori: { type: String, required: true },
-    jumlah: { type: Number, required: true, min: 1 },
-    estimasiHarga: { type: Number, required: true },
-    keperluan: { type: String, required: true },
-    status: { 
-        type: String, 
-        enum: ["Pending", "Disetujui", "Ditolak", "Selesai"], 
-        default: "Pending" 
-    },
-    pemohon: { type: String, required: true },
-  },
-  { timestamps: true }
-);
+// Skema untuk detail item barang di dalam pengajuan
+const itemBarangSchema = new mongoose.Schema({
+  nama: { type: String, required: true },
+  kategori: { type: String, required: true },
+  spesifikasi: { type: String },
+  jumlah: { type: Number, required: true, min: 1 },
+  satuan: { type: String, required: true },
+  harga: { type: Number, required: true, min: 0 },
+});
 
-// 2. Skema untuk Pengajuan
+// Skema Utama Pengajuan
 const pengajuanSchema = new mongoose.Schema(
   {
-    judulPengajuan: { type: String, required: true, trim: true },
-    jenis: { type: String, required: true },
-    deskripsi: { type: String, required: true },
-    diajukanOleh: { type: String, required: true },
+    nomorPengajuan: { type: String, required: true, unique: true },
+    tanggalPengajuan: { type: String, required: true },
+    namaPengaju: { type: String, required: true },
+    unitFakultas: { type: String, required: true },
+    prioritas: { type: String, enum: ["Rendah", "Sedang", "Tinggi", "Darurat"], default: "Sedang" },
+    tanggalDibutuhkan: { type: String, required: true },
+    daftarBarang: [itemBarangSchema], // Array menampung banyak barang sekaligus
+    alasan: { type: String, required: true },
+    estimasiTotal: { type: Number, required: true },
     statusApproval: { 
-        type: String, 
-        enum: ["Draft", "Menunggu Review", "Disetujui", "Ditolak"], 
-        default: "Draft" 
+      type: String, 
+      enum: ["Draft", "Menunggu Review", "Disetujui", "Ditolak"], 
+      default: "Menunggu Review" 
     },
     catatanAdmin: { type: String, default: "" },
   },
   { timestamps: true }
 );
 
-// 3. Skema untuk Pengaturan
-const pengaturanSchema = new mongoose.Schema(
-  {
-    namaInstansi: { type: String, required: true, default: "Kampus" },
-    tahunAkademik: { type: String, required: true },
-    maxBatasPengadaanTanpaApproval: { type: Number, default: 1000000 },
-    isMaintenance: { type: Boolean, default: false },
-  },
-  { timestamps: true }
-);
-
-// Ekspor semua model
-const Pengadaan = mongoose.model("Pengadaan", pengadaanSchema);
 const Pengajuan = mongoose.model("Pengajuan", pengajuanSchema);
-const Pengaturan = mongoose.model("Pengaturan", pengaturanSchema);
 
-module.exports = {
-  Pengadaan,
-  Pengajuan,
-  Pengaturan,
-};
+module.exports = { Pengajuan };

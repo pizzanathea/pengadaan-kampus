@@ -67,6 +67,11 @@ function BuatPengajuanPage() {
   const [baris, setBaris] = useState<Baris[]>([barisBaru(1)]);
   const [berkas, setBerkas] = useState<string[]>([]);
 
+  // Generate nomor pengajuan unik otomatis agar tidak duplikat di database
+  const [nomorUnik] = useState(
+    `PB-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
+  );
+
   const ubah = (key: number, patch: Partial<Baris>) =>
     setBaris((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
 
@@ -97,19 +102,48 @@ function BuatPengajuanPage() {
 
       <form
         className="space-y-6"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          toast.success("Pengajuan berhasil diajukan", {
-            description: "Pengajuan Anda diteruskan ke Kepala Unit untuk persetujuan.",
-          });
-          navigate({ to: "/pengajuan" });
+
+          // Bungkus data form sesuai struktur backend
+          const payload = {
+            nomorPengajuan: nomorUnik,
+            tanggalPengajuan: "2026-08-11",
+            namaPengaju: "Budi Santoso",
+            unitFakultas: "Fakultas Ilmu Komputer",
+            prioritas: "Sedang",
+            tanggalDibutuhkan: "2026-09-01",
+            daftarBarang: baris,
+            alasan: (document.getElementById("alasan") as HTMLTextAreaElement).value,
+          };
+
+          try {
+            const response = await fetch("http://localhost:5000/api/pengajuan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              toast.success("Pengajuan berhasil diajukan", {
+                description: "Pengajuan Anda berhasil disimpan ke database.",
+              });
+              navigate({ to: "/pengajuan" });
+            } else {
+              toast.error("Gagal menyimpan: " + result.message);
+            }
+          } catch (error) {
+            toast.error("Terjadi kesalahan koneksi ke server.");
+          }
         }}
       >
         <Panel judul="Informasi Pengajuan">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="nomor">Nomor Pengajuan</Label>
-              <Input id="nomor" defaultValue="PB-2026-00126" readOnly className="bg-muted" />
+              <Input id="nomor" value={nomorUnik} readOnly className="bg-muted" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tglPengajuan">Tanggal Pengajuan</Label>

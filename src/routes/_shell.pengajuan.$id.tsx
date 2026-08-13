@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Printer, AlertCircle, Plus, Trash2, Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -14,7 +14,6 @@ import {
   InformasiPengajuan,
   RiwayatPengajuan,
 } from "@/components/pengajuan-detail";
-import { getPengajuan } from "@/data/pengadaan";
 
 export const Route = createFileRoute("/_shell/pengajuan/$id")({
   head: () => ({
@@ -22,13 +21,7 @@ export const Route = createFileRoute("/_shell/pengajuan/$id")({
       { title: "Detail Pengajuan — Sistem Pengadaan Kampus" },
       {
         name: "description",
-        content:
-          "Detail pengajuan barang kampus: informasi pengaju, daftar barang, alasan, lampiran, dan riwayat pengajuan.",
-      },
-      { property: "og:title", content: "Detail Pengajuan — Sistem Pengadaan Kampus" },
-      {
-        property: "og:description",
-        content: "Rincian lengkap satu pengajuan barang beserta riwayat prosesnya.",
+        content: "Detail pengajuan barang kampus dari database.",
       },
     ],
   }),
@@ -37,35 +30,58 @@ export const Route = createFileRoute("/_shell/pengajuan/$id")({
 
 function DetailPengajuanPage() {
   const { id } = Route.useParams();
-  const p = getPengajuan(id);
+  
+  const [p, setP] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // State editable untuk Daftar Barang (ditambahkan kategori & spesifikasi)
-  const [barangList, setBarangList] = useState<any[]>(
-    p?.barang || [
-      { nama: "Laptop Core i7", kategori: "Elektronik", spesifikasi: "RAM 16GB, SSD 512GB", jumlah: 5, satuan: "Unit", perkiraanHarga: 12500000 },
-      { nama: "Proyektor Epson", kategori: "Elektronik", spesifikasi: "Full HD 3400 Lumens", jumlah: 2, satuan: "Unit", perkiraanHarga: 6000000 },
-    ]
-  );
+  const [barangList, setBarangList] = useState<any[]>([]);
   const [isEditBarang, setIsEditBarang] = useState(false);
 
-  // State editable untuk Alasan & Lampiran
-  const [alasan, setAlasan] = useState(p?.alasan || "Keperluan peningkatan laboratorium.");
+  const [alasan, setAlasan] = useState("");
   const [isEditAlasan, setIsEditAlasan] = useState(false);
 
-  const [lampiranList, setLampiranList] = useState<any[]>(
-    p?.lampiran ? (Array.isArray(p.lampiran) ? p.lampiran : [p.lampiran]) : ["proposal-kegiatan.pdf", "rancangan-anggaran.xlsx"]
-  );
+  const [lampiranList, setLampiranList] = useState<any[]>([]);
   const [isEditLampiran, setIsEditLampiran] = useState(false);
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/pengajuan`)
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          const found = result.data.find(
+            (item: any) => item.nomorPengajuan === id || item._id === id
+          );
+          if (found) {
+            setP(found);
+            setBarangList(found.daftarBarang || []);
+            setAlasan(found.alasan || "");
+            setLampiranList(found.lampiran || ["proposal-kegiatan.pdf"]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Panel>
+        <p className="p-6 text-center text-sm text-muted-foreground">Memuat detail pengajuan...</p>
+      </Panel>
+    );
+  }
 
   if (!p) {
     return (
       <Panel>
         <EmptyState
           judul="Pengajuan tidak ditemukan"
-          deskripsi={`Pengajuan dengan nomor ${id} tidak tersedia.`}
+          deskripsi={`Pengajuan dengan nomor ${id} tidak tersedia di database.`}
           aksi={
             <Button asChild variant="outline">
-              <Link to="/persetujuan">Kembali ke daftar pengajuan</Link>
+              <Link to="/pengajuan">Kembali ke daftar pengajuan</Link>
             </Button>
           }
         />
@@ -73,29 +89,65 @@ function DetailPengajuanPage() {
     );
   }
 
-  const isDitolak = p.status.toLowerCase().includes("tolak") || p.status.toLowerCase().includes("rejected");
+  const mappedData = {
+    ...p,
+    nomor: p.nomorPengajuan || id,
+    status: p.statusApproval || "Menunggu Review",
+    unit: p.unitFakultas || "-",
+    pengaju: p.namaPengaju || "-",
+    tanggal: p.tanggalPengajuan || "",
+    barang: barangList,
+  };
 
-  const handleSimpanPerubahan = () => {
-    setIsEditBarang(false);
-    setIsEditAlasan(false);
-    setIsEditLampiran(false);
-    toast.success("Perubahan pengajuan berhasil disimpan", {
-      description: `Data untuk pengajuan ${p.nomor} telah diperbarui.`,
-    });
+  const statusStr = p.statusApproval || "";
+  const isDitolak = statusStr.toLowerCase().includes("tolak") || statusStr.toLowerCase().includes("rejected");
+
+  // Fungsi untuk menyimpan perubahan ke backend database
+  const handleSimpanPerubahan = async () => {
+    const updatedPayload = {
+      ...p,
+      daftarBarang: barangList,
+      alasan: alasan,
+      lampiran: lampiranList,
+    };
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/pengajuan/${p._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPayload),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsEditBarang(false);
+        setIsEditAlasan(false);
+        setIsEditLampiran(false);
+        toast.success("Perubahan pengajuan berhasil disimpan", {
+          description: `Data untuk pengajuan ${mappedData.nomor} telah diperbarui di database.`,
+        });
+      } else {
+        toast.error("Gagal menyimpan: " + result.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Terjadi kesalahan koneksi ke server.");
+    }
   };
 
   return (
     <>
       <Breadcrumb
-        items={[{ label: "Pengajuan Barang", to: "/pengajuan" }, { label: p.nomor }]}
+        items={[{ label: "Pengajuan Barang", to: "/pengajuan" }, { label: mappedData.nomor }]}
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Detail Pengajuan</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">{p.nomor}</span>
-            <StatusBadge status={p.status} />
+            <span className="text-sm font-medium">{mappedData.nomor}</span>
+            <StatusBadge status={mappedData.status} />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -110,9 +162,8 @@ function DetailPengajuanPage() {
         </div>
       </div>
 
-      <InformasiPengajuan p={p} />
+      <InformasiPengajuan p={mappedData} />
 
-      {/* Panel Daftar Barang dengan mode klik untuk ubah (termasuk Kategori & Spesifikasi) */}
       <Panel
         judul="Daftar Barang"
         deskripsi="Klik tombol edit untuk mengubah, menambah, atau menghapus daftar barang"
@@ -207,10 +258,10 @@ function DetailPengajuanPage() {
                       <td className="px-3 py-2">
                         <Input
                           type="number"
-                          value={item.perkiraanHarga ?? 0}
+                          value={item.harga ?? item.perkiraanHarga ?? 0}
                           onChange={(e) => {
                             const updated = [...barangList];
-                            updated[index] = { ...updated[index], perkiraanHarga: Number(e.target.value) };
+                            updated[index] = { ...updated[index], harga: Number(e.target.value) };
                             setBarangList(updated);
                           }}
                           className="h-9"
@@ -238,24 +289,19 @@ function DetailPengajuanPage() {
               size="sm"
               className="gap-1.5"
               onClick={() => {
-                setBarangList([...barangList, { nama: "", kategori: "", spesifikasi: "", jumlah: 1, satuan: "Unit", perkiraanHarga: 0 }]);
+                setBarangList([...barangList, { nama: "", kategori: "", spesifikasi: "", jumlah: 1, satuan: "Unit", harga: 0 }]);
               }}
             >
               <Plus className="size-4" /> Tambah Barang
             </Button>
           </div>
         ) : (
-          <DaftarBarang p={{ ...p, barang: barangList }} />
+          <DaftarBarang p={mappedData} />
         )}
       </Panel>
 
-      {/* Panel Alasan & Lampiran dengan tombol ubah terpisah */}
-      <Panel
-        judul="Alasan &amp; Lampiran"
-        deskripsi="Tinjau alasan dan berkas lampiran pengadaan"
-      >
+      <Panel judul="Alasan &amp; Lampiran" deskripsi="Tinjau alasan dan berkas lampiran pengadaan">
         <div className="space-y-6">
-          {/* Bagian Alasan */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alasan Pengajuan</span>
@@ -279,7 +325,6 @@ function DetailPengajuanPage() {
             )}
           </div>
 
-          {/* Bagian Lampiran */}
           <div className="space-y-2 border-t pt-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Berkas Lampiran</span>
@@ -315,34 +360,20 @@ function DetailPengajuanPage() {
                 );
               })}
             </div>
-
-            {isEditLampiran && (
-              <div className="pt-2">
-                <Input
-                  type="file"
-                  className="cursor-pointer text-xs"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      setLampiranList([...lampiranList, e.target.files[0].name]);
-                    }
-                  }}
-                />
-              </div>
-            )}
           </div>
         </div>
       </Panel>
 
-      <RiwayatPengajuan p={p} />
+      <RiwayatPengajuan p={mappedData} />
 
       {isDitolak && (
-        <Panel judul="Alasan Penolakan" deskripsi="Keterangan mengapa pengajuan ini ditolak oleh reviewer">
+        <Panel judul="Alasan Penolakan" deskripsi="Keterangan mengapa pengajuan ini ditolak">
           <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-destructive">
             <AlertCircle className="size-5 shrink-0 mt-0.5" aria-hidden />
             <div className="space-y-1 text-sm">
               <p className="font-medium">Pengajuan tidak dapat disetujui</p>
               <p className="text-muted-foreground">
-                {(p as any).alasanPenolakan || "Anggaran unit untuk periode ini sudah terpakai dan melewati batas maksimal pengajuan per semester."}
+                {p.catatanAdmin || "Anggaran unit untuk periode ini sudah terpakai."}
               </p>
             </div>
           </div>
