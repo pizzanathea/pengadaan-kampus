@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import {
 import { EmptyState, PageHeader, Panel } from "@/components/ui-kit";
 import { PrioritasBadge, StatusBadge } from "@/components/status-badge";
 import {
-  PENGAJUAN,
   PRIORITAS_LIST,
   UNIT_LIST,
   formatRupiah,
@@ -23,6 +22,7 @@ import {
   ringkasanBarang,
   totalNilai,
 } from "@/data/pengadaan";
+import { usePengajuanData } from "@/hooks/use-pengajuan";
 
 export const Route = createFileRoute("/_shell/persetujuan/")({
   head: () => ({
@@ -39,8 +39,6 @@ export const Route = createFileRoute("/_shell/persetujuan/")({
 
 type Role = "persetujuan_1" | "persetujuan_2";
 
-// TODO(auth): ganti ini dengan role dari session/auth beneran begitu backend siap,
-// misal: const { role } = useAuth(); — hapus useState mock + toggle switcher di bawah.
 const ROLE_CONFIG: Record<
   Role,
   {
@@ -88,7 +86,8 @@ const ROLE_CONFIG: Record<
 };
 
 function PersetujuanPage() {
-  // Mock role buat testing UI — nanti diganti auth. Default persetujuan_1.
+  const { data: semuaPengajuan, loading, error } = usePengajuanData();
+
   const [role, setRole] = useState<Role>("persetujuan_1");
   const config = ROLE_CONFIG[role];
 
@@ -97,7 +96,6 @@ function PersetujuanPage() {
   const [prioritas, setPrioritas] = useState("semua");
   const [tanggal, setTanggal] = useState("");
 
-  // Reset filter status ke default role setiap kali role-nya ganti (khusus mock testing)
   const handleRoleChange = (r: Role) => {
     setRole(r);
     setStatus(ROLE_CONFIG[r].defaultStatus);
@@ -105,7 +103,7 @@ function PersetujuanPage() {
 
   const data = useMemo(
     () =>
-      PENGAJUAN.filter(
+      semuaPengajuan.filter(
         (p) =>
           config.statusScope.includes(p.status) &&
           (status === "semua" ? true : p.status === status) &&
@@ -113,12 +111,11 @@ function PersetujuanPage() {
           (prioritas === "semua" || p.prioritas === prioritas) &&
           (!tanggal || p.tanggal === tanggal),
       ),
-    [config, status, unit, prioritas, tanggal],
+    [semuaPengajuan, config, status, unit, prioritas, tanggal],
   );
 
   return (
     <>
-      {/* ⚠️ Dev-only role switcher — HAPUS blok ini begitu auth/role dari backend udah jalan */}
       <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
         <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
         <Select value={role} onValueChange={(v) => handleRoleChange(v as Role)}>
@@ -196,7 +193,13 @@ function PersetujuanPage() {
       </Panel>
 
       <Panel judul={config.deskripsiPanel} deskripsi={`${data.length} pengajuan ditampilkan`} padat>
-        {data.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" aria-hidden /> Memuat data...
+          </div>
+        ) : error ? (
+          <EmptyState judul="Gagal memuat data" deskripsi={error} />
+        ) : data.length === 0 ? (
           <EmptyState judul={config.emptyJudul} deskripsi={config.emptyDeskripsi} />
         ) : (
           <>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Check, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, X, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,8 @@ import {
   InformasiPengajuan,
   RiwayatPengajuan,
 } from "@/components/pengajuan-detail";
-import { getPengajuan } from "@/data/pengadaan";
+import { usePengajuanData } from "@/hooks/use-pengajuan";
+import { apiUpdateStatusPengajuan } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/persetujuan/$id")({
   head: () => ({
@@ -37,13 +38,7 @@ export const Route = createFileRoute("/_shell/persetujuan/$id")({
       { title: "Detail Persetujuan — Sistem Pengadaan Kampus" },
       {
         name: "description",
-        content:
-          "Tinjau pengajuan barang lalu setujui, tolak, atau minta perbaikan sesuai kebutuhan unit.",
-      },
-      { property: "og:title", content: "Detail Persetujuan — Sistem Pengadaan Kampus" },
-      {
-        property: "og:description",
-        content: "Tinjau dan putuskan pengajuan barang kampus.",
+        content: "Tinjau pengajuan barang lalu setujui, tolak, atau minta perbaikan.",
       },
     ],
   }),
@@ -55,15 +50,34 @@ type Role = "persetujuan_1" | "persetujuan_2";
 function DetailPersetujuanPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const p = getPengajuan(id);
+  const { data: semuaPengajuan, loading, error, refetch } = usePengajuanData();
+  const p = semuaPengajuan.find((item) => item.nomor === id);
 
-  // TODO(auth): ganti dengan role dari session/auth beneran, lalu hapus toggle di bawah.
   const [role, setRole] = useState<Role>("persetujuan_1");
+  const [menyimpan, setMenyimpan] = useState(false);
 
   const [tolakTerbuka, setTolakTerbuka] = useState(false);
   const [alasanTolak, setAlasanTolak] = useState("");
   const [perbaikanTerbuka, setPerbaikanTerbuka] = useState(false);
   const [alasanPerbaikan, setAlasanPerbaikan] = useState("");
+
+  if (loading) {
+    return (
+      <Panel>
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" aria-hidden /> Memuat data...
+        </div>
+      </Panel>
+    );
+  }
+
+  if (error) {
+    return (
+      <Panel>
+        <EmptyState judul="Gagal memuat data" deskripsi={error} />
+      </Panel>
+    );
+  }
 
   if (!p) {
     return (
@@ -83,28 +97,44 @@ function DetailPersetujuanPage() {
 
   const isPersetujuan1 = role === "persetujuan_1";
 
-  const handleSetujui = () => {
-    if (isPersetujuan1) {
-      // Persetujuan 1 approve → status jadi "menunggu_2", BELUM final,
-      // pengajuan diteruskan ke Persetujuan Keuangan.
+  const handleSetujui = async () => {
+    setMenyimpan(true);
+    try {
+      const statusBaru = isPersetujuan1 ? "menunggu_2" : "disetujui";
+      await apiUpdateStatusPengajuan(p.id, statusBaru);
       toast.success("Pengajuan disetujui", {
-        description: `${p.nomor} diteruskan ke Persetujuan Keuangan.`,
+        description: isPersetujuan1
+          ? `${p.nomor} diteruskan ke Persetujuan Keuangan.`
+          : `${p.nomor} diteruskan ke proses pengadaan.`,
       });
-    } else {
-      // Persetujuan 2 (Keuangan) approve → ini baru final, status jadi
-      // "disetujui" dan lanjut ke proses pengadaan.
-      toast.success("Pengajuan disetujui", {
-        description: `${p.nomor} diteruskan ke proses pengadaan.`,
+      navigate({ to: "/persetujuan" });
+    } catch (e) {
+      toast.error("Gagal menyimpan perubahan", {
+        description: e instanceof Error ? e.message : "Terjadi kesalahan koneksi ke server.",
       });
+    } finally {
+      setMenyimpan(false);
     }
-    // TODO(backend): update status pengajuan di sini —
-    // isPersetujuan1 ? "menunggu_2" : "disetujui"
-    navigate({ to: "/persetujuan" });
+  };
+
+  const handleTolak = async () => {
+    setMenyimpan(true);
+    try {
+      await apiUpdateStatusPengajuan(p.id, "ditolak");
+      setTolakTerbuka(false);
+      toast.success("Pengajuan ditolak", { description: p.nomor });
+      navigate({ to: "/persetujuan" });
+    } catch (e) {
+      toast.error("Gagal menyimpan perubahan", {
+        description: e instanceof Error ? e.message : "Terjadi kesalahan koneksi ke server.",
+      });
+    } finally {
+      setMenyimpan(false);
+    }
   };
 
   return (
     <>
-      {/* ⚠️ Dev-only role switcher — HAPUS blok ini begitu auth/role dari backend udah jalan */}
       <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
         <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
         <Select value={role} onValueChange={(v) => setRole(v as Role)}>
@@ -142,7 +172,7 @@ function DetailPersetujuanPage() {
 
       <Panel judul="Tindakan Persetujuan" deskripsi="Pilih keputusan atas pengajuan ini">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button className="w-full sm:w-auto" onClick={handleSetujui}>
+          <Button className="w-full sm:w-auto" onClick={handleSetujui} disabled={menyimpan}>
             <Check className="size-4" aria-hidden />
             {isPersetujuan1 ? "Setujui & Teruskan ke Keuangan" : "Setujui & Proses Pengadaan"}
           </Button>
@@ -150,6 +180,7 @@ function DetailPersetujuanPage() {
             variant="outline"
             className="w-full sm:w-auto"
             onClick={() => setPerbaikanTerbuka(true)}
+            disabled={menyimpan}
           >
             <RotateCcw className="size-4" aria-hidden /> Minta Perbaikan
           </Button>
@@ -157,6 +188,7 @@ function DetailPersetujuanPage() {
             variant="outline"
             className="w-full text-destructive hover:text-destructive sm:w-auto"
             onClick={() => setTolakTerbuka(true)}
+            disabled={menyimpan}
           >
             <X className="size-4" aria-hidden /> Tolak Pengajuan
           </Button>
@@ -236,12 +268,8 @@ function DetailPersetujuanPage() {
             </Button>
             <Button
               className="w-full sm:w-auto"
-              disabled={!alasanTolak.trim()}
-              onClick={() => {
-                setTolakTerbuka(false);
-                toast.success("Pengajuan ditolak", { description: p.nomor });
-                navigate({ to: "/persetujuan" });
-              }}
+              disabled={!alasanTolak.trim() || menyimpan}
+              onClick={handleTolak}
             >
               Konfirmasi Penolakan
             </Button>

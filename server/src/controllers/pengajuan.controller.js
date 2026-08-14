@@ -87,7 +87,7 @@ exports.createPengajuan = async (req, res) => {
       daftarBarang: formattedBarang,
       alasan,
       estimasiTotal,
-      statusApproval: "Menunggu Review",
+      statusApproval: "menunggu",
     });
 
     const savedData = await newPengajuan.save();
