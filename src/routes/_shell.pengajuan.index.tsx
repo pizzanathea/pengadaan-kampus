@@ -108,7 +108,7 @@ function PengajuanPage() {
       />
 
       <Panel>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="cari">Cari</Label>
             <div className="relative">
@@ -153,16 +153,6 @@ function PengajuanPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="tanggal">Tanggal</Label>
-            <Input
-              id="tanggal"
-              type="date"
-              value={tanggal}
-              onChange={(e) => setTanggal(e.target.value)}
-            />
           </div>
         </div>
       </Panel>

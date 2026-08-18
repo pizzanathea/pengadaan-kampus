@@ -59,9 +59,11 @@ const barisBaru = (key: number): Baris => ({
 function BuatPengajuanPage() {
   const navigate = useNavigate();
   const [baris, setBaris] = useState<Baris[]>([barisBaru(1)]);
-  
+
   // State lampiran diubah menampung nama file yang diunggah
-  const [berkas, setBerkas] = useState<string[]>([]);
+  // Ubah dari: const [berkas, setBerkas] = useState<string[]>([]);
+  // Menjadi:
+  const [berkas, setBerkas] = useState<any[]>([]);
 
   const [nomorUnik] = useState(
     `PB-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
@@ -78,7 +80,7 @@ function BuatPengajuanPage() {
 
   const totalBarang = baris.length;
   const totalKuantitas = baris.reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
-  
+
   const estimasiTotal = baris.reduce((s, b) => {
     const hargaNum = Number(String(b.harga).replace(/[^0-9]/g, "")) || 0;
     return s + (Number(b.jumlah) || 0) * hargaNum;
@@ -115,38 +117,47 @@ function BuatPengajuanPage() {
             harga: Number(String(b.harga).replace(/[^0-9]/g, "")) || 0,
           }));
 
-          // Masukkan array nama file 'berkas' ke dalam payload
-          const payload = {
-            nomorPengajuan: nomorUnik,
-            tanggalPengajuan,
-            namaPengaju,
-            unitFakultas,
-            prioritas,
-            tanggalDibutuhkan,
-            daftarBarang: daftarBarangPayload,
-            alasan,
-            lampiran: berkas, // Menyertakan lampiran ke database
-          };
+          // Gunakan FormData agar file fisik dapat terkirim ke backend
+          const formData = new FormData();
+          formData.append("nomorPengajuan", nomorUnik);
+          formData.append("tanggalPengajuan", tanggalPengajuan);
+          formData.append("namaPengaju", namaPengaju);
+          formData.append("unitFakultas", unitFakultas);
+          formData.append("prioritas", prioritas);
+          formData.append("tanggalDibutuhkan", tanggalDibutuhkan);
+          formData.append("daftarBarang", JSON.stringify(daftarBarangPayload));
+          formData.append("alasan", alasan);
+
+          // Masukkan file fisik asli dari state 'berkas' ke dalam formData
+          berkas.forEach((file: any) => {
+            formData.append("lampiran", file);
+          });
 
           try {
             const response = await fetch("http://localhost:5000/api/pengajuan", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
+              body: formData, // Tanpa headers Content-Type, biarkan browser mengaturnya
             });
 
-            const result = await response.json();
+            const responseText = await response.text();
+            let result;
+
+            try {
+              result = JSON.parse(responseText);
+            } catch (err) {
+              throw new Error(responseText || "Gagal mengurai respons server");
+            }
 
             if (result.success) {
               toast.success("Pengajuan berhasil diajukan", {
-                description: "Pengajuan dan lampiran Anda berhasil disimpan ke database.",
+                description: "Pengajuan dan berkas lampiran berhasil disimpan.",
               });
               navigate({ to: "/pengajuan" });
             } else {
               toast.error("Gagal menyimpan: " + result.message);
             }
-          } catch (error) {
-            toast.error("Terjadi kesalahan koneksi ke server.");
+          } catch (error: any) {
+            toast.error("Terjadi kesalahan: " + error.message);
           }
         }}
       >
@@ -369,24 +380,24 @@ function BuatPengajuanPage() {
                   multiple
                   className="sr-only"
                   onChange={(e) => {
-                    const files = Array.from(e.target.files ?? []).map((f) => f.name);
-                    // Menambahkan file baru ke state tanpa menimpa file sebelumnya
-                    setBerkas((prev) => [...prev, ...files]);
+                    // Simpan objek File mentah ke state 'berkas'
+                    const uploadedFiles = Array.from(e.target.files ?? []);
+                    setBerkas((prev) => [...prev, ...uploadedFiles]);
                   }}
                 />
               </label>
               {berkas.length > 0 ? (
                 <ul className="mt-3 space-y-2">
-                  {berkas.map((f, index) => (
+                  {berkas.map((file: any, index) => (
                     <li
                       key={index}
                       className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
                     >
-                      <span className="truncate">{f}</span>
+                      <span className="truncate">{file.name}</span>
                       <button
                         type="button"
                         onClick={() => setBerkas((prev) => prev.filter((_, i) => i !== index))}
-                        className="shrink-0 text-xs font-medium text-destructive"
+                        className="shrink-0 text-xs font-medium text-destructive hover:underline"
                       >
                         Hapus
                       </button>

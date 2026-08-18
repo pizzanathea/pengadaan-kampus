@@ -2,12 +2,16 @@ require("dotenv").config(); // <-- BARIS INI WAJIB ADA DI PALING ATAS AGAR .env 
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path"); // <-- Tambahan modul path untuk direktori folder
 
 const app = express();
 
 // Middleware wajib
 app.use(cors());
 app.use(express.json());
+
+// --- TAMBAHAN: Agar folder 'uploads' bisa diakses publik via browser ---
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // --- PASANG RUTE DI SINI ---
 const pengajuanRoutes = require("./routes/pengajuan.routes");

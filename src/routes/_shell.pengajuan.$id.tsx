@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_shell/pengajuan/$id")({
 
 function DetailPengajuanPage() {
   const { id } = Route.useParams();
-  
+
   const [p, setP] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -103,36 +103,49 @@ function DetailPengajuanPage() {
   const statusStr = p.statusApproval || "";
   const isDitolak = statusStr.toLowerCase().includes("tolak") || statusStr.toLowerCase().includes("rejected");
 
+  // Fungsi saat menyimpan perubahan / kelola lampiran di halaman detail ($id.tsx)
   const handleSimpanPerubahan = async () => {
-    const updatedPayload = {
-      ...p,
-      daftarBarang: barangList,
-      alasan: alasan,
-      lampiran: lampiranList,
-    };
+    const formData = new FormData();
+    formData.append("alasan", alasan);
+
+    // Menggunakan 'barangList' yang sesuai dengan state halaman ini
+    formData.append("daftarBarang", JSON.stringify(barangList));
+
+    // Memproses lampiran: file fisik baru atau nama file string lama
+    lampiranList.forEach((file: any) => {
+      if (file instanceof File) {
+        formData.append("lampiran", file);
+      } else {
+        const namaFileLama = typeof file === "string" ? file : (file.nama || file.name);
+        formData.append("lampiranLama", namaFileLama);
+      }
+    });
 
     try {
-      const response = await fetch(`http://localhost:5000/api/pengajuan/${p._id}`, {
+      const response = await fetch(`http://localhost:5000/api/pengajuan/${p._id || id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPayload),
+        body: formData, // Tanpa headers Content-Type agar FormData terbaca dengan benar
       });
 
-      const result = await response.json();
+      const responseText = await response.text();
+      let result;
+
+      try {
+        result = JSON.parse(responseText);
+      } catch (err) {
+        throw new Error(responseText || "Gagal mengurai respons server");
+      }
 
       if (result.success) {
-        setIsEditBarang(false);
+        toast.success("Perubahan berhasil disimpan!");
         setIsEditAlasan(false);
         setIsEditLampiran(false);
-        toast.success("Perubahan pengajuan berhasil disimpan", {
-          description: `Data untuk pengajuan ${mappedData.nomor} telah diperbarui di database.`,
-        });
+        setIsEditBarang(false);
       } else {
-        toast.error("Gagal menyimpan: " + result.message);
+        toast.error("Gagal: " + result.message);
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Terjadi kesalahan koneksi ke server.");
+    } catch (error: any) {
+      toast.error("Terjadi kesalahan: " + error.message);
     }
   };
 
@@ -343,25 +356,32 @@ function DetailPengajuanPage() {
                 <p className="text-xs text-muted-foreground italic">Belum ada berkas lampiran yang diunggah.</p>
               ) : (
                 lampiranList.map((file, idx) => {
-                  const fileName = typeof file === "object" && file !== null ? (file.nama || file.name || JSON.stringify(file)) : file;
+                  const fileName = typeof file === "object" && file !== null ? (file.nama || file.name || file.toString()) : file;
+
                   return (
                     <div key={idx} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm bg-muted/40">
                       <span className="truncate font-medium">{fileName}</span>
                       <div className="flex items-center gap-1">
-                        {/* Tombol Lihat (Mata) */}
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-8 px-2 text-muted-foreground hover:text-foreground"
                           title="Lihat / Pratinjau Lampiran"
                           onClick={() => {
-                            toast.info(`Membuka lampiran: ${fileName}`);
+                            // Jika berupa File objek baru di memori, buat object URL, jika dari server gunakan path uploads
+                            if (file instanceof File) {
+                              const objectUrl = URL.createObjectURL(file);
+                              window.open(objectUrl, "_blank");
+                            } else {
+                              const fileUrl = `http://localhost:5000/uploads/${fileName}`;
+                              toast.success(`Membuka berkas: ${fileName}`);
+                              window.open(fileUrl, "_blank");
+                            }
                           }}
                         >
                           <Eye className="size-4" />
                         </Button>
 
-                        {/* Tombol Hapus jika mode edit aktif */}
                         {isEditLampiran && (
                           <Button
                             variant="ghost"
@@ -381,7 +401,6 @@ function DetailPengajuanPage() {
               )}
             </div>
 
-            {/* Input tambah lampiran baru ketika mode edit aktif */}
             {isEditLampiran && (
               <div className="pt-2">
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border p-4 text-center hover:bg-muted/50">
@@ -392,9 +411,10 @@ function DetailPengajuanPage() {
                     multiple
                     className="sr-only"
                     onChange={(e) => {
-                      const files = Array.from(e.target.files ?? []).map((f) => f.name);
-                      setLampiranList((prev) => [...prev, ...files]);
-                      toast.success("File berhasil ditambahkan ke daftar lampiran");
+                      // Menyimpan objek File mentah agar terbaca sebagai instance File saat disimpan
+                      const newFiles = Array.from(e.target.files ?? []);
+                      setLampiranList((prev) => [...prev, ...newFiles]);
+                      toast.success("File berhasil ditambahkan");
                     }}
                   />
                 </label>

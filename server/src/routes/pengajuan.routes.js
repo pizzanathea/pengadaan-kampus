@@ -1,10 +1,16 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const pengajuanController = require("../controllers/pengajuan.controller");
 
-// Endpoint: GET /api/pengajuan dan POST /api/pengajuan
-router.get("/", pengajuanController.getAllPengajuan);
-router.post("/", pengajuanController.createPengajuan);
-router.put("/:id", pengajuanController.updatePengajuan);
+// Pastikan 'uploadFiles' ikut di-import di sini dari file controller
+const { 
+  getAllPengajuan, 
+  createPengajuan, 
+  updatePengajuan, 
+  uploadFiles 
+} = require('../controllers/pengajuan.controller');
+
+router.get('/', getAllPengajuan);
+router.post('/', uploadFiles, createPengajuan); // Pastikan uploadFiles ada di sini
+router.put('/:id', uploadFiles, updatePengajuan);
 
 module.exports = router;
