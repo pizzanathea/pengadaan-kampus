@@ -8,12 +8,7 @@ import { Breadcrumb, EmptyState, Panel } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
 import { DaftarBarang, InformasiPengajuan } from "@/components/pengajuan-detail";
 import { Timeline } from "@/components/timeline";
-import {
-  PENGADAAN,
-  formatTanggal,
-  getPengajuan,
-  type StatusPengadaan,
-} from "@/data/pengadaan";
+import { PENGADAAN, formatTanggal, getPengajuan, type StatusPengadaan } from "@/data/pengadaan";
 
 export const Route = createFileRoute("/_shell/pengadaan/$id")({
   head: () => ({
@@ -58,7 +53,9 @@ function DetailPengadaanPage() {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Proses Pengadaan", to: "/pengadaan" }, { label: awal.nomor }]} />
+      <Breadcrumb
+        items={[{ label: "Proses Pengadaan", to: "/pengadaan" }, { label: awal.nomor }]}
+      />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -81,7 +78,12 @@ function DetailPengadaanPage() {
       <Panel judul="Alur Pengadaan" deskripsi="Disetujui → Sedang Diproses → Selesai">
         <Timeline
           langkah={[
-            { judul: "Disetujui", oleh: "Kepala Unit", waktu: formatTanggal(awal.tanggal), status: "selesai" },
+            {
+              judul: "Disetujui",
+              oleh: "Kepala Unit",
+              waktu: formatTanggal(awal.tanggal),
+              status: "selesai",
+            },
             {
               judul: "Sedang Diproses",
               oleh: "Admin Pengadaan",

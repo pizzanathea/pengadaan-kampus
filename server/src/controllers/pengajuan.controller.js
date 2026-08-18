@@ -18,12 +18,13 @@ exports.getAllPengajuan = async (req, res) => {
 exports.updatePengajuan = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Hitung ulang estimasi total biaya jika daftar barang diubah
     const daftarBarang = req.body.daftarBarang || [];
     const estimasiTotal = daftarBarang.reduce(
-      (sum, item) => sum + (Number(item.jumlah) || 0) * (Number(item.harga || item.perkiraanHarga) || 0),
-      0
+      (sum, item) =>
+        sum + (Number(item.jumlah) || 0) * (Number(item.harga || item.perkiraanHarga) || 0),
+      0,
     );
 
     const updateData = {
@@ -31,11 +32,11 @@ exports.updatePengajuan = async (req, res) => {
       estimasiTotal: estimasiTotal > 0 ? estimasiTotal : req.body.estimasiTotal,
     };
 
-    const updated = await Pengajuan.findByIdAndUpdate(id, updateData, { 
-      new: true, 
-      runValidators: true 
+    const updated = await Pengajuan.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
     });
-    
+
     if (!updated) {
       return res.status(404).json({ success: false, message: "Pengajuan tidak ditemukan" });
     }
@@ -72,10 +73,7 @@ exports.createPengajuan = async (req, res) => {
     }));
 
     // Hitung total estimasi biaya secara aman
-    const estimasiTotal = formattedBarang.reduce(
-      (sum, item) => sum + item.jumlah * item.harga,
-      0
-    );
+    const estimasiTotal = formattedBarang.reduce((sum, item) => sum + item.jumlah * item.harga, 0);
 
     const newPengajuan = new Pengajuan({
       nomorPengajuan: nomorPengajuan || `PB-${Date.now()}`,

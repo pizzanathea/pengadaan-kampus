@@ -1,13 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { FileText, Clock, CheckCircle2, Loader2, PackageCheck, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -53,13 +45,13 @@ const KPI = [
   { label: "Selesai", nilai: jumlahStatus("selesai"), icon: PackageCheck },
 ];
 
-const DATA_GRAFIK = (
-  ["menunggu", "disetujui", "ditolak", "diproses", "selesai"] as const
-).map((s) => ({
-  status: LABEL_STATUS[s],
-  ringkas: LABEL_STATUS[s].split(" ")[0],
-  jumlah: jumlahStatus(s),
-}));
+const DATA_GRAFIK = (["menunggu", "disetujui", "ditolak", "diproses", "selesai"] as const).map(
+  (s) => ({
+    status: LABEL_STATUS[s],
+    ringkas: LABEL_STATUS[s].split(" ")[0],
+    jumlah: jumlahStatus(s),
+  }),
+);
 
 function DashboardPage() {
   const terbaru = PENGAJUAN.slice(0, 6);
@@ -116,7 +108,12 @@ function DashboardPage() {
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.status ?? ""}
                     formatter={(v: number) => [`${v} pengajuan`, ""]}
                   />
-                  <Bar dataKey="jumlah" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                  <Bar
+                    dataKey="jumlah"
+                    fill="var(--chart-1)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={48}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -183,7 +180,10 @@ function DashboardPage() {
             </thead>
             <tbody>
               {terbaru.map((p) => (
-                <tr key={p.nomor} className="border-b border-border last:border-0 hover:bg-muted/50">
+                <tr
+                  key={p.nomor}
+                  className="border-b border-border last:border-0 hover:bg-muted/50"
+                >
                   <td className="px-5 py-3 font-medium whitespace-nowrap">
                     <Link
                       to="/pengajuan/$id"
@@ -226,9 +226,7 @@ function DashboardPage() {
                 <p className="mt-1 truncate text-sm">{ringkasanBarang(p)}</p>
                 <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span>{formatTanggal(p.tanggal)}</span>
-                  <span className="font-medium text-foreground">
-                    {formatRupiah(totalNilai(p))}
-                  </span>
+                  <span className="font-medium text-foreground">{formatRupiah(totalNilai(p))}</span>
                 </div>
               </Link>
             </li>

@@ -133,6 +133,24 @@ function DetailPersetujuanPage() {
     }
   };
 
+  const handlePerbaikan = async () => {
+    setMenyimpan(true);
+    try {
+      await apiUpdateStatusPengajuan(p.id, "perlu_perbaikan");
+      setPerbaikanTerbuka(false);
+      toast.success("Permintaan perbaikan dikirim", {
+        description: `Pengaju akan menerima notifikasi untuk merevisi ${p.nomor}.`,
+      });
+      navigate({ to: "/persetujuan" });
+    } catch (e) {
+      toast.error("Gagal menyimpan perubahan", {
+        description: e instanceof Error ? e.message : "Terjadi kesalahan koneksi ke server.",
+      });
+    } finally {
+      setMenyimpan(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
@@ -224,14 +242,8 @@ function DetailPersetujuanPage() {
             </Button>
             <Button
               className="w-full sm:w-auto"
-              disabled={!alasanPerbaikan.trim()}
-              onClick={() => {
-                setPerbaikanTerbuka(false);
-                toast.success("Permintaan perbaikan dikirim", {
-                  description: `Pengaju akan menerima notifikasi untuk merevisi ${p.nomor}.`,
-                });
-                navigate({ to: "/persetujuan" });
-              }}
+              disabled={!alasanPerbaikan.trim() || menyimpan}
+              onClick={handlePerbaikan}
             >
               Kirim Permintaan Perbaikan
             </Button>
