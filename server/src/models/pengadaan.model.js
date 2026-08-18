@@ -22,10 +22,10 @@ const pengajuanSchema = new mongoose.Schema(
     daftarBarang: [itemBarangSchema], // Array menampung banyak barang sekaligus
     alasan: { type: String, required: true },
     estimasiTotal: { type: Number, required: true },
-    statusApproval: {
-      type: String,
-      enum: ["menunggu", "menunggu_2", "disetujui", "ditolak", "perlu_perbaikan"],
-      default: "menunggu",
+    statusApproval: { 
+      type: String, 
+      enum: ["Draft", "Menunggu Review", "Disetujui", "Ditolak", "menunggu", "menunggu_2", "disetujui", "ditolak", "diproses", "selesai", "dibatalkan"], 
+      default: "menunggu" 
     },
     catatanAdmin: { type: String, default: "" },
     alasanPenolakan: { type: String, default: "" },

@@ -99,10 +99,15 @@ function DetailPengajuanPage() {
     );
   }
 
+  let normalizedStatus = p.statusApproval || "menunggu";
+  if (normalizedStatus === "Menunggu Review") normalizedStatus = "menunggu";
+  if (normalizedStatus === "Disetujui") normalizedStatus = "disetujui";
+  if (normalizedStatus === "Ditolak") normalizedStatus = "ditolak";
+
   const mappedData = {
     ...p,
     nomor: p.nomorPengajuan || id,
-    status: p.statusApproval || "Menunggu Review",
+    status: normalizedStatus,
     unit: p.unitFakultas || "-",
     pengaju: p.namaPengaju || "-",
     tanggal: p.tanggalPengajuan || "",

@@ -28,6 +28,11 @@ export type BackendPengajuan = {
 };
 
 export function mapBackendPengajuan(b: BackendPengajuan): Pengajuan {
+  let normalizedStatus = b.statusApproval || "menunggu";
+  if (normalizedStatus === "Menunggu Review") normalizedStatus = "menunggu";
+  if (normalizedStatus === "Disetujui") normalizedStatus = "disetujui";
+  if (normalizedStatus === "Ditolak") normalizedStatus = "ditolak";
+
   return {
     id: b._id,
     nomor: b.nomorPengajuan,
@@ -36,7 +41,7 @@ export function mapBackendPengajuan(b: BackendPengajuan): Pengajuan {
     unit: b.unitFakultas,
     prioritas: b.prioritas as Prioritas,
     tanggalDibutuhkan: b.tanggalDibutuhkan,
-    status: (b.statusApproval as StatusPengajuan) || "menunggu",
+    status: normalizedStatus as StatusPengajuan,
     alasan: b.alasan,
     lampiran: (b.lampiran || []).map((nama) => ({ nama, ukuran: "-" })),
     barang: b.daftarBarang,

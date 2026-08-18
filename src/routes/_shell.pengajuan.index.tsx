@@ -20,7 +20,11 @@ import {
   UNIT_LIST,
   formatRupiah,
   formatTanggal,
+  totalNilai,
+  totalKuantitas,
+  ringkasanBarang,
 } from "@/data/pengadaan";
+import { mapBackendPengajuan } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/pengajuan/")({
   head: () => ({
@@ -36,7 +40,6 @@ export const Route = createFileRoute("/_shell/pengajuan/")({
 });
 
 function PengajuanPage() {
-  // Ditambahkan <any[]> agar TypeScript tidak protes
   const [listPengajuan, setListPengajuan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +53,7 @@ function PengajuanPage() {
       .then((res) => res.json())
       .then((result) => {
         if (result.success) {
-          setListPengajuan(result.data);
+          setListPengajuan(result.data.map(mapBackendPengajuan));
         } else {
           toast.error("Gagal memuat data pengajuan");
         }
@@ -62,32 +65,21 @@ function PengajuanPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const ringkasanBarang = (p: any) => {
-    if (!p.daftarBarang || p.daftarBarang.length === 0) return "-";
-    if (p.daftarBarang.length === 1) return p.daftarBarang[0].nama;
-    return `${p.daftarBarang[0].nama} (+${p.daftarBarang.length - 1} lainnya)`;
-  };
-
-  const totalKuantitas = (p: any) => {
-    if (!p.daftarBarang) return 0;
-    return p.daftarBarang.reduce((sum: number, b: any) => sum + (b.jumlah || 0), 0);
-  };
-
   const data = useMemo(
     () =>
       listPengajuan.filter((p: any) => {
         const q = cari.trim().toLowerCase();
         const cocokCari =
           !q ||
-          p.nomorPengajuan?.toLowerCase().includes(q) ||
-          p.namaPengaju?.toLowerCase().includes(q) ||
-          p.daftarBarang?.some((b: any) => b.nama.toLowerCase().includes(q));
+          p.nomor?.toLowerCase().includes(q) ||
+          p.pengaju?.toLowerCase().includes(q) ||
+          p.barang?.some((b: any) => b.nama.toLowerCase().includes(q));
 
         return (
           cocokCari &&
-          (status === "semua" || p.statusApproval === status) &&
-          (unit === "semua" || p.unitFakultas === unit) &&
-          (!tanggal || p.tanggalPengajuan === tanggal)
+          (status === "semua" || p.status === status) &&
+          (unit === "semua" || p.unit === unit) &&
+          (!tanggal || p.tanggal === tanggal)
         );
       }),
     [listPengajuan, cari, status, unit, tanggal]
@@ -131,9 +123,12 @@ function PengajuanPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua status</SelectItem>
-                <SelectItem value="Menunggu Review">Menunggu Review</SelectItem>
-                <SelectItem value="Disetujui">Disetujui</SelectItem>
-                <SelectItem value="Ditolak">Ditolak</SelectItem>
+                <SelectItem value="menunggu">Menunggu Persetujuan</SelectItem>
+                <SelectItem value="menunggu_2">Menunggu Persetujuan Keuangan</SelectItem>
+                <SelectItem value="disetujui">Disetujui</SelectItem>
+                <SelectItem value="ditolak">Ditolak</SelectItem>
+                <SelectItem value="diproses">Sedang Diproses</SelectItem>
+                <SelectItem value="selesai">Selesai</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -180,20 +175,20 @@ function PengajuanPage() {
               </thead>
               <tbody>
                 {data.map((p: any) => (
-                  <tr key={p._id} className="border-b hover:bg-muted/50">
-                    <td className="px-5 py-3 font-medium">{p.nomorPengajuan}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{formatTanggal(p.tanggalPengajuan)}</td>
-                    <td className="px-5 py-3">{p.namaPengaju}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{p.unitFakultas}</td>
+                  <tr key={p.id} className="border-b hover:bg-muted/50">
+                    <td className="px-5 py-3 font-medium">{p.nomor}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{formatTanggal(p.tanggal)}</td>
+                    <td className="px-5 py-3">{p.pengaju}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{p.unit}</td>
                     <td className="px-5 py-3">{ringkasanBarang(p)}</td>
                     <td className="px-5 py-3 text-right">{totalKuantitas(p)}</td>
-                    <td className="px-5 py-3 text-right">{formatRupiah(p.estimasiTotal)}</td>
+                    <td className="px-5 py-3 text-right">{formatRupiah(totalNilai(p))}</td>
                     <td className="px-5 py-3">
-                      <StatusBadge status={p.statusApproval} />
+                      <StatusBadge status={p.status} />
                     </td>
                     <td className="px-5 py-3 text-right">
                       <Button variant="outline" size="sm" asChild>
-                        <Link to="/pengajuan/$id" params={{ id: p.nomorPengajuan }}>
+                        <Link to="/pengajuan/$id" params={{ id: p.id }}>
                           <Eye className="size-4" /> Detail
                         </Link>
                       </Button>
