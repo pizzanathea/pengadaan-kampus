@@ -27,32 +27,70 @@ exports.getAllPengajuan = async (req, res) => {
 exports.updatePengajuan = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Ambil data lama di database
+    const existingData = await Pengajuan.findById(id);
+    if (!existingData) {
+      return res.status(404).json({ success: false, message: "Pengajuan tidak ditemukan" });
+    }
 
-    const { alasan, daftarBarang } = req.body;
+    const updateData = {};
 
-    const parsedBarang = daftarBarang ? JSON.parse(daftarBarang) : [];
+    // Update statusApproval jika ada di request body
+    if (req.body.statusApproval !== undefined) {
+      updateData.statusApproval = req.body.statusApproval;
+    }
+
+    // Update alasan jika ada di request body
+    if (req.body.alasan !== undefined) {
+      updateData.alasan = req.body.alasan;
+    }
+
+    // Update alasanPenolakan dan catatanAdmin jika ada di request body
+    if (req.body.alasanPenolakan !== undefined) {
+      updateData.alasanPenolakan = req.body.alasanPenolakan;
+      updateData.catatanAdmin = req.body.alasanPenolakan;
+    }
+
+    // Update catatanPerbaikan jika ada di request body
+    if (req.body.catatanPerbaikan !== undefined) {
+      updateData.catatanPerbaikan = req.body.catatanPerbaikan;
+    }
+
+    // Update daftarBarang jika ada di request body
+    if (req.body.daftarBarang !== undefined) {
+      let parsedBarang = [];
+      if (typeof req.body.daftarBarang === "string") {
+        try {
+          parsedBarang = JSON.parse(req.body.daftarBarang);
+        } catch (e) {
+          parsedBarang = [];
+        }
+      } else {
+        parsedBarang = req.body.daftarBarang;
+      }
+      updateData.daftarBarang = parsedBarang;
+
+      // Hitung ulang estimasi total biaya jika daftar barang diubah
+      updateData.estimasiTotal = parsedBarang.reduce(
+        (sum, item) =>
+          sum + (Number(item.jumlah) || 0) * (Number(item.harga || item.perkiraanHarga) || 0),
+        0,
+      );
+    }
 
     // Tangkap file baru yang di-upload saat edit (jika ada)
-    const newFiles = req.files ? req.files.map(f => f.filename) : [];
+    if (req.files && req.files.length > 0) {
+      const newFiles = req.files.map(f => f.filename);
+      const lampiranLama = req.body.lampiranLama ? (Array.isArray(req.body.lampiranLama) ? req.body.lampiranLama : [req.body.lampiranLama]) : (existingData.lampiran || []);
+      updateData.lampiran = [...lampiranLama, ...newFiles];
+    } else if (req.body.lampiranLama !== undefined) {
+      updateData.lampiran = Array.isArray(req.body.lampiranLama) ? req.body.lampiranLama : [req.body.lampiranLama];
+    }
 
-    // Ambil data lama di database terlebih dahulu jika ingin menggabungkan lampiran lama dan baru
-    const existingData = await Pengajuan.findById(id);
-    const lampiranLama = req.body.lampiranLama ? (Array.isArray(req.body.lampiranLama) ? req.body.lampiranLama : [req.body.lampiranLama]) : (existingData.lampiran || []);
-
-    const gabunganLampiran = [...lampiranLama, ...newFiles];
-
-
-    const updateData = {
-      alasan,
-      daftarBarang: parsedBarang,
-      lampiran: gabunganLampiran,
-    };
-
-
-    const updated = await Pengajuan.findByIdAndUpdate(id, updateData, { new: true });
-
+    const updated = await Pengajuan.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    
     res.status(200).json({ success: true, message: "Berhasil diperbarui", data: updated });
-
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

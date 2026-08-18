@@ -118,11 +118,15 @@ function DetailPengajuanPage() {
   const statusStr = p.statusApproval || "";
   const isDitolak =
     statusStr.toLowerCase().includes("tolak") || statusStr.toLowerCase().includes("rejected");
+  const isPerluPerbaikan =
+    statusStr.toLowerCase().includes("perbaikan") || statusStr.toLowerCase().includes("revisi");
 
   // Fungsi saat menyimpan perubahan / kelola lampiran di halaman detail ($id.tsx)
   const handleSimpanPerubahan = async () => {
     const formData = new FormData();
     formData.append("alasan", alasan);
+    formData.append("statusApproval", "menunggu");
+    formData.append("catatanPerbaikan", "");
 
     // Menggunakan 'barangList' yang sesuai dengan state halaman ini
     formData.append("daftarBarang", JSON.stringify(barangList));
@@ -157,6 +161,13 @@ function DetailPengajuanPage() {
         setIsEditAlasan(false);
         setIsEditLampiran(false);
         setIsEditBarang(false);
+        // Reset status lokal agar perubahan langsung ter-render tanpa manual refresh
+        if (result.data) {
+          setP(result.data);
+          setBarangList(result.data.daftarBarang || []);
+          setAlasan(result.data.alasan || "");
+          setLampiranList(result.data.lampiran || []);
+        }
       } else {
         toast.error("Gagal: " + result.message);
       }
@@ -459,7 +470,21 @@ function DetailPengajuanPage() {
             <div className="space-y-1 text-sm">
               <p className="font-medium">Pengajuan tidak dapat disetujui</p>
               <p className="text-muted-foreground">
-                {p.catatanAdmin || "Anggaran unit untuk periode ini sudah terpakai."}
+                {p.alasanPenolakan || p.catatanAdmin || "Anggaran unit untuk periode ini sudah terpakai."}
+              </p>
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      {isPerluPerbaikan && (
+        <Panel judul="Catatan Perbaikan" deskripsi="Keterangan bagian yang perlu diperbaiki">
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800/30 dark:bg-amber-950/20 dark:text-amber-500">
+            <AlertCircle className="size-5 shrink-0 mt-0.5" aria-hidden />
+            <div className="space-y-1 text-sm">
+              <p className="font-medium">Perlu Perbaikan</p>
+              <p className="text-muted-foreground">
+                {p.catatanPerbaikan || "Mohon periksa kembali spesifikasi detail barang."}
               </p>
             </div>
           </div>

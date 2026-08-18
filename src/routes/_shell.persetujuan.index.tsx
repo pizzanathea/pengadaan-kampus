@@ -57,9 +57,10 @@ const ROLE_CONFIG: Record<
     subtitle: "Pengajuan yang membutuhkan persetujuan Anda",
     deskripsiPanel: "Daftar Persetujuan",
     defaultStatus: "menunggu",
-    statusScope: ["menunggu", "disetujui", "ditolak"],
+    statusScope: ["menunggu", "disetujui", "ditolak", "perlu_perbaikan"],
     statusOptions: [
       { value: "menunggu", label: "Menunggu Persetujuan" },
+      { value: "perlu_perbaikan", label: "Perlu Perbaikan" },
       { value: "disetujui", label: "Disetujui" },
       { value: "ditolak", label: "Ditolak" },
       { value: "semua", label: "Semua" },
@@ -72,9 +73,10 @@ const ROLE_CONFIG: Record<
     subtitle: "Pengajuan yang sudah disetujui Persetujuan 1 dan menunggu persetujuan akhir Anda",
     deskripsiPanel: "Daftar Persetujuan Keuangan",
     defaultStatus: "menunggu_2",
-    statusScope: ["menunggu_2", "disetujui", "ditolak"],
+    statusScope: ["menunggu_2", "disetujui", "ditolak", "perlu_perbaikan"],
     statusOptions: [
       { value: "menunggu_2", label: "Menunggu Persetujuan Keuangan" },
+      { value: "perlu_perbaikan", label: "Perlu Perbaikan" },
       { value: "disetujui", label: "Disetujui" },
       { value: "ditolak", label: "Ditolak" },
       { value: "semua", label: "Semua" },

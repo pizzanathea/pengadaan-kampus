@@ -59,11 +59,13 @@ export async function apiFetchPengajuanList(): Promise<BackendPengajuan[]> {
 export async function apiUpdateStatusPengajuan(
   id: string,
   statusApproval: string,
+  alasanPenolakan?: string,
+  catatanPerbaikan?: string,
 ): Promise<BackendPengajuan> {
   const res = await fetch(`${API_BASE_URL}/api/pengajuan/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ statusApproval }),
+    body: JSON.stringify({ statusApproval, alasanPenolakan, catatanPerbaikan }),
   });
   if (!res.ok) throw new Error("Gagal memperbarui status pengajuan.");
   const json = await res.json();

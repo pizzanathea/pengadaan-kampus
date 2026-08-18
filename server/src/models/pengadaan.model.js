@@ -24,7 +24,7 @@ const pengajuanSchema = new mongoose.Schema(
     estimasiTotal: { type: Number, required: true },
     statusApproval: { 
       type: String, 
-      enum: ["Draft", "Menunggu Review", "Disetujui", "Ditolak", "menunggu", "menunggu_2", "disetujui", "ditolak", "diproses", "selesai", "dibatalkan"], 
+      enum: ["Draft", "Menunggu Review", "Disetujui", "Ditolak", "menunggu", "menunggu_2", "disetujui", "ditolak", "diproses", "selesai", "dibatalkan", "perlu_perbaikan"], 
       default: "menunggu" 
     },
     catatanAdmin: { type: String, default: "" },

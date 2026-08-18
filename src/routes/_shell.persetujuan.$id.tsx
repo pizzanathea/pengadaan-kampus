@@ -120,7 +120,7 @@ function DetailPersetujuanPage() {
   const handleTolak = async () => {
     setMenyimpan(true);
     try {
-      await apiUpdateStatusPengajuan(p.id, "ditolak");
+      await apiUpdateStatusPengajuan(p.id, "ditolak", alasanTolak);
       setTolakTerbuka(false);
       toast.success("Pengajuan ditolak", { description: p.nomor });
       navigate({ to: "/persetujuan" });
@@ -136,7 +136,7 @@ function DetailPersetujuanPage() {
   const handlePerbaikan = async () => {
     setMenyimpan(true);
     try {
-      await apiUpdateStatusPengajuan(p.id, "perlu_perbaikan");
+      await apiUpdateStatusPengajuan(p.id, "perlu_perbaikan", undefined, alasanPerbaikan);
       setPerbaikanTerbuka(false);
       toast.success("Permintaan perbaikan dikirim", {
         description: `Pengaju akan menerima notifikasi untuk merevisi ${p.nomor}.`,
