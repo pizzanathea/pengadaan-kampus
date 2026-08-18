@@ -66,7 +66,7 @@ function BuatPengajuanPage() {
   const [berkas, setBerkas] = useState<any[]>([]);
 
   const [nomorUnik] = useState(
-    `PB-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
+    `PB-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
   );
   const [tanggalPengajuan, setTanggalPengajuan] = useState("");
   const [namaPengaju, setNamaPengaju] = useState("");
@@ -89,10 +89,7 @@ function BuatPengajuanPage() {
   return (
     <>
       <Breadcrumb
-        items={[
-          { label: "Pengajuan Barang", to: "/pengajuan" },
-          { label: "Buat Pengajuan" },
-        ]}
+        items={[{ label: "Pengajuan Barang", to: "/pengajuan" }, { label: "Buat Pengajuan" }]}
       />
 
       <PageHeader
@@ -263,10 +260,7 @@ function BuatPengajuanPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Kategori</Label>
-                    <Select
-                      value={b.kategori}
-                      onValueChange={(v) => ubah(b.key, { kategori: v })}
-                    >
+                    <Select value={b.kategori} onValueChange={(v) => ubah(b.key, { kategori: v })}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
@@ -327,7 +321,10 @@ function BuatPengajuanPage() {
                   <div className="space-y-1.5">
                     <Label>Total</Label>
                     <p className="flex h-9 items-center rounded-md bg-muted px-3 text-sm font-medium break-all">
-                      {formatRupiah((Number(b.jumlah) || 0) * (Number(String(b.harga).replace(/[^0-9]/g, "")) || 0))}
+                      {formatRupiah(
+                        (Number(b.jumlah) || 0) *
+                          (Number(String(b.harga).replace(/[^0-9]/g, "")) || 0),
+                      )}
                     </p>
                   </div>
                   <div className="flex items-end xl:col-span-3">
@@ -364,7 +361,10 @@ function BuatPengajuanPage() {
               </div>
             </Panel>
 
-            <Panel judul="Lampiran" deskripsi="Format PDF, Excel, atau gambar. Maksimal 5 MB per file.">
+            <Panel
+              judul="Lampiran"
+              deskripsi="Format PDF, Excel, atau gambar. Maksimal 5 MB per file."
+            >
               <label
                 htmlFor="lampiran"
                 className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center hover:bg-muted/50"

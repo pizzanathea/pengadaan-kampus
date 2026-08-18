@@ -29,13 +29,34 @@ exports.updatePengajuan = async (req, res) => {
     const { id } = req.params;
     const { alasan, daftarBarang } = req.body;
     
-    const parsedBarang = daftarBarang ? JSON.parse(daftarBarang) : [];
+    let parsedBarang = [];
+    if (daftarBarang) {
+      if (typeof daftarBarang === "string") {
+        try {
+          parsedBarang = JSON.parse(daftarBarang);
+        } catch (e) {
+          parsedBarang = [];
+        }
+      } else {
+        parsedBarang = daftarBarang;
+      }
+    }
+    
+    // Hitung ulang estimasi total biaya jika daftar barang diubah
+    const estimasiTotal = parsedBarang.reduce(
+      (sum, item) =>
+        sum + (Number(item.jumlah) || 0) * (Number(item.harga || item.perkiraanHarga) || 0),
+      0,
+    );
     
     // Tangkap file baru yang di-upload saat edit (jika ada)
     const newFiles = req.files ? req.files.map(f => f.filename) : [];
 
     // Ambil data lama di database terlebih dahulu jika ingin menggabungkan lampiran lama dan baru
     const existingData = await Pengajuan.findById(id);
+    if (!existingData) {
+      return res.status(404).json({ success: false, message: "Pengajuan tidak ditemukan" });
+    }
     const lampiranLama = req.body.lampiranLama ? (Array.isArray(req.body.lampiranLama) ? req.body.lampiranLama : [req.body.lampiranLama]) : (existingData.lampiran || []);
 
     const gabunganLampiran = [...lampiranLama, ...newFiles];
@@ -44,11 +65,19 @@ exports.updatePengajuan = async (req, res) => {
       alasan,
       daftarBarang: parsedBarang,
       lampiran: gabunganLampiran,
+      estimasiTotal,
     };
 
-    const updated = await Pengajuan.findByIdAndUpdate(id, updateData, { new: true });
-    
-    res.status(200).json({ success: true, message: "Berhasil diperbarui", data: updated });
+    const updated = await Pengajuan.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Pengajuan tidak ditemukan" });
+    }
+
+    res.status(200).json({ success: true, message: "Data berhasil diperbarui", data: updated });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -56,26 +85,50 @@ exports.updatePengajuan = async (req, res) => {
 
 exports.createPengajuan = async (req, res) => {
   try {
-    // Karena pakai FormData, data harus di-parse jika dikirim sebagai string
-    const { nomorPengajuan, tanggalPengajuan, namaPengaju, unitFakultas, prioritas, tanggalDibutuhkan, daftarBarang, alasan } = req.body;
+    const { 
+      nomorPengajuan, 
+      tanggalPengajuan, 
+      namaPengaju, 
+      unitFakultas, 
+      prioritas, 
+      tanggalDibutuhkan, 
+      daftarBarang, 
+      alasan 
+    } = req.body;
     
-    const parsedBarang = JSON.parse(daftarBarang);
-    const lampiranFiles = req.files ? req.files.map(f => f.filename) : [];
+    let parsedBarang = [];
+    if (daftarBarang) {
+      if (typeof daftarBarang === "string") {
+        try {
+          parsedBarang = JSON.parse(daftarBarang);
+        } catch (e) {
+          parsedBarang = [];
+        }
+      } else {
+        parsedBarang = daftarBarang;
+      }
+    }
 
-    const formattedBarang = parsedBarang.map((item) => ({
-      ...item,
+    // Pastikan setiap item barang memiliki format angka yang valid
+    const formattedBarang = (parsedBarang || []).map((item) => ({
+      nama: item.nama,
+      kategori: item.kategori || "Elektronik",
+      spesifikasi: item.spesifikasi || "",
       jumlah: Number(item.jumlah) || 1,
-      harga: Number(item.harga) || 0,
+      satuan: item.satuan || "Unit",
+      harga: Number(item.harga || item.perkiraanHarga) || 0,
     }));
 
+    // Hitung total estimasi biaya secara aman
     const estimasiTotal = formattedBarang.reduce((sum, item) => sum + item.jumlah * item.harga, 0);
+    const lampiranFiles = req.files ? req.files.map(f => f.filename) : [];
 
     const newPengajuan = new Pengajuan({
       nomorPengajuan: nomorPengajuan || `PB-${Date.now()}`,
-      tanggalPengajuan,
+      tanggalPengajuan: tanggalPengajuan || new Date().toISOString().split("T")[0],
       namaPengaju,
       unitFakultas,
-      prioritas,
+      prioritas: prioritas || "Sedang",
       tanggalDibutuhkan,
       daftarBarang: formattedBarang,
       alasan,

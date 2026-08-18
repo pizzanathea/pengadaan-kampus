@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Printer, AlertCircle, Plus, Trash2, Save, Pencil, Eye, Upload } from "lucide-react";
+import {
+  ArrowLeft,
+  Printer,
+  AlertCircle,
+  Plus,
+  Trash2,
+  Save,
+  Pencil,
+  Eye,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -49,7 +59,7 @@ function DetailPengajuanPage() {
       .then((result) => {
         if (result.success && Array.isArray(result.data)) {
           const found = result.data.find(
-            (item: any) => item.nomorPengajuan === id || item._id === id
+            (item: any) => item.nomorPengajuan === id || item._id === id,
           );
           if (found) {
             setP(found);
@@ -101,7 +111,8 @@ function DetailPengajuanPage() {
   };
 
   const statusStr = p.statusApproval || "";
-  const isDitolak = statusStr.toLowerCase().includes("tolak") || statusStr.toLowerCase().includes("rejected");
+  const isDitolak =
+    statusStr.toLowerCase().includes("tolak") || statusStr.toLowerCase().includes("rejected");
 
   // Fungsi saat menyimpan perubahan / kelola lampiran di halaman detail ($id.tsx)
   const handleSimpanPerubahan = async () => {
@@ -302,7 +313,10 @@ function DetailPengajuanPage() {
               size="sm"
               className="gap-1.5"
               onClick={() => {
-                setBarangList([...barangList, { nama: "", kategori: "", spesifikasi: "", jumlah: 1, satuan: "Unit", harga: 0 }]);
+                setBarangList([
+                  ...barangList,
+                  { nama: "", kategori: "", spesifikasi: "", jumlah: 1, satuan: "Unit", harga: 0 },
+                ]);
               }}
             >
               <Plus className="size-4" /> Tambah Barang
@@ -317,7 +331,9 @@ function DetailPengajuanPage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alasan Pengajuan</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Alasan Pengajuan
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -328,11 +344,7 @@ function DetailPengajuanPage() {
               </Button>
             </div>
             {isEditAlasan ? (
-              <Textarea
-                rows={3}
-                value={alasan}
-                onChange={(e) => setAlasan(e.target.value)}
-              />
+              <Textarea rows={3} value={alasan} onChange={(e) => setAlasan(e.target.value)} />
             ) : (
               <p className="text-sm rounded-md bg-muted/40 p-3">{alasan}</p>
             )}
@@ -340,7 +352,9 @@ function DetailPengajuanPage() {
 
           <div className="space-y-2 border-t pt-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Berkas Lampiran</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Berkas Lampiran
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -353,13 +367,18 @@ function DetailPengajuanPage() {
 
             <div className="space-y-2">
               {lampiranList.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">Belum ada berkas lampiran yang diunggah.</p>
+                <p className="text-xs text-muted-foreground italic">
+                  Belum ada berkas lampiran yang diunggah.
+                </p>
               ) : (
                 lampiranList.map((file, idx) => {
                   const fileName = typeof file === "object" && file !== null ? (file.nama || file.name || file.toString()) : file;
 
                   return (
-                    <div key={idx} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm bg-muted/40">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm bg-muted/40"
+                    >
                       <span className="truncate font-medium">{fileName}</span>
                       <div className="flex items-center gap-1">
                         <Button

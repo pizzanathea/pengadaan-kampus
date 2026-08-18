@@ -54,7 +54,13 @@ export const Route = createFileRoute("/_shell/laporan")({
   component: LaporanPage,
 });
 
-const WARNA = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+const WARNA = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 function LaporanPage() {
   const [periode, setPeriode] = useState("2026");
@@ -81,7 +87,10 @@ function LaporanPage() {
         data.filter((p) => ["disetujui", "diproses", "selesai"].includes(p.status)).length,
       ),
     },
-    { label: "Pengajuan Ditolak", nilai: String(data.filter((p) => p.status === "ditolak").length) },
+    {
+      label: "Pengajuan Ditolak",
+      nilai: String(data.filter((p) => p.status === "ditolak").length),
+    },
     {
       label: "Total Nilai Pengadaan",
       nilai: formatRupiah(data.reduce((s, p) => s + totalNilai(p), 0)),
@@ -215,7 +224,10 @@ function LaporanPage() {
         <Panel judul="Pengajuan per Bulan">
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={PENGAJUAN_PER_BULAN} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <LineChart
+                data={PENGAJUAN_PER_BULAN}
+                margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                 <XAxis
                   dataKey="bulan"
@@ -228,7 +240,10 @@ function LaporanPage() {
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} pengajuan`, ""]} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(v: number) => [`${v} pengajuan`, ""]}
+                />
                 <Line
                   type="monotone"
                   dataKey="jumlah"
@@ -303,7 +318,12 @@ function LaporanPage() {
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.unit ?? ""}
                     formatter={(v: number) => [`${v} pengajuan`, ""]}
                   />
-                  <Bar dataKey="jumlah" fill="var(--chart-1)" radius={[0, 4, 4, 0]} maxBarSize={22} />
+                  <Bar
+                    dataKey="jumlah"
+                    fill="var(--chart-1)"
+                    radius={[0, 4, 4, 0]}
+                    maxBarSize={22}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -311,7 +331,11 @@ function LaporanPage() {
         </div>
       </div>
 
-      <Panel judul="Rincian Laporan" deskripsi={`${data.length} pengajuan pada periode terpilih`} padat>
+      <Panel
+        judul="Rincian Laporan"
+        deskripsi={`${data.length} pengajuan pada periode terpilih`}
+        padat
+      >
         {data.length === 0 ? (
           <EmptyState
             judul="Data laporan kosong"

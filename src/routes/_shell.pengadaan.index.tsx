@@ -59,10 +59,7 @@ function PengadaanPage() {
 
   return (
     <>
-      <PageHeader
-        judul="Proses Pengadaan"
-        subtitle="Kelola pengajuan yang telah disetujui"
-      />
+      <PageHeader judul="Proses Pengadaan" subtitle="Kelola pengajuan yang telah disetujui" />
 
       <Panel>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -136,7 +133,10 @@ function PengadaanPage() {
                   {data.map((d) => {
                     const p = getPengajuan(d.nomorPengajuan);
                     return (
-                      <tr key={d.nomor} className="border-b border-border last:border-0 hover:bg-muted/50">
+                      <tr
+                        key={d.nomor}
+                        className="border-b border-border last:border-0 hover:bg-muted/50"
+                      >
                         <td className="px-5 py-3 font-medium whitespace-nowrap">{d.nomor}</td>
                         <td className="px-5 py-3 whitespace-nowrap text-muted-foreground">
                           {d.nomorPengajuan}
