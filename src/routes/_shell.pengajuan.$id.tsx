@@ -372,7 +372,9 @@ function DetailPengajuanPage() {
                 </p>
               ) : (
                 lampiranList.map((file, idx) => {
+
                   const fileName = typeof file === "object" && file !== null ? (file.nama || file.name || file.toString()) : file;
+
 
                   return (
                     <div
