@@ -11,7 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Agar folder 'uploads' bisa diakses publik via browser ---
+// Serve folder uploads biar file bisa diakses publik lewat browser.
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // --- PASANG RUTE DI SINI (Setelah 'app' dideklarasikan) ---
@@ -22,7 +22,8 @@ const pengaturanRoutes = require('./routes/pengaturan.routes');
 app.use('/api/unit', pengaturanRoutes);
 
 // Sambungkan ke MongoDB & Jalankan Server
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Terhubung!");
     app.listen(5000, () => console.log("Server berjalan di port 5000"));

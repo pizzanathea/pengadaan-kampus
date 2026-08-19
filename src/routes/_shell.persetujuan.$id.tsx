@@ -25,14 +25,20 @@ import { Breadcrumb, EmptyState, Panel } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
 import {
   AlasanDanLampiran,
+  CatatanKeputusan,
   DaftarBarang,
   InformasiPengajuan,
   RiwayatPengajuan,
 } from "@/components/pengajuan-detail";
 import { usePengajuanData } from "@/hooks/use-pengajuan";
-import { apiUpdateStatusPengajuan } from "@/lib/api";
+import { apiUpdatePengajuan } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/persetujuan/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    role: ((search["role"] as Role) === "persetujuan_2"
+      ? "persetujuan_2"
+      : "persetujuan_1") as Role,
+  }),
   head: () => ({
     meta: [
       { title: "Detail Persetujuan — Sistem Pengadaan Kampus" },
@@ -49,11 +55,11 @@ type Role = "persetujuan_1" | "persetujuan_2";
 
 function DetailPersetujuanPage() {
   const { id } = Route.useParams();
-  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { data: semuaPengajuan, loading, error, refetch } = usePengajuanData();
   const p = semuaPengajuan.find((item) => item.nomor === id);
 
-  const [role, setRole] = useState<Role>("persetujuan_1");
   const [menyimpan, setMenyimpan] = useState(false);
 
   const [tolakTerbuka, setTolakTerbuka] = useState(false);
@@ -95,13 +101,13 @@ function DetailPersetujuanPage() {
     );
   }
 
-  const isPersetujuan1 = role === "persetujuan_1";
+  const isPersetujuan1 = search.role === "persetujuan_1";
 
   const handleSetujui = async () => {
     setMenyimpan(true);
     try {
       const statusBaru = isPersetujuan1 ? "menunggu_2" : "disetujui";
-      await apiUpdateStatusPengajuan(p.id, statusBaru);
+      await apiUpdatePengajuan(p.id, { statusApproval: statusBaru });
       toast.success("Pengajuan disetujui", {
         description: isPersetujuan1
           ? `${p.nomor} diteruskan ke Persetujuan Keuangan.`
@@ -120,7 +126,10 @@ function DetailPersetujuanPage() {
   const handleTolak = async () => {
     setMenyimpan(true);
     try {
-      await apiUpdateStatusPengajuan(p.id, "ditolak", alasanTolak);
+      await apiUpdatePengajuan(p.id, {
+        statusApproval: "ditolak",
+        alasanPenolakan: alasanTolak,
+      });
       setTolakTerbuka(false);
       toast.success("Pengajuan ditolak", { description: p.nomor });
       navigate({ to: "/persetujuan" });
@@ -136,7 +145,11 @@ function DetailPersetujuanPage() {
   const handlePerbaikan = async () => {
     setMenyimpan(true);
     try {
-      await apiUpdateStatusPengajuan(p.id, "perlu_perbaikan", undefined, alasanPerbaikan);
+      await apiUpdatePengajuan(p.id, {
+        statusApproval: "perlu_perbaikan",
+        catatanPerbaikan: alasanPerbaikan,
+        kembaliKe: isPersetujuan1 ? "menunggu" : "menunggu_2",
+      });
       setPerbaikanTerbuka(false);
       toast.success("Permintaan perbaikan dikirim", {
         description: `Pengaju akan menerima notifikasi untuk merevisi ${p.nomor}.`,
@@ -155,7 +168,10 @@ function DetailPersetujuanPage() {
     <>
       <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
         <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
-        <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+        <Select
+          value={search.role}
+          onValueChange={(v) => navigate({ search: { role: v as Role } })}
+        >
           <SelectTrigger className="h-8 w-[220px] text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -186,6 +202,7 @@ function DetailPersetujuanPage() {
       <InformasiPengajuan p={p} />
       <DaftarBarang p={p} />
       <AlasanDanLampiran p={p} />
+      <CatatanKeputusan p={p} />
       <RiwayatPengajuan p={p} />
 
       <Panel judul="Tindakan Persetujuan" deskripsi="Pilih keputusan atas pengajuan ini">

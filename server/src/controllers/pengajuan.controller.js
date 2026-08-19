@@ -41,6 +41,10 @@ exports.updatePengajuan = async (req, res) => {
       updateData.statusApproval = req.body.statusApproval;
     }
 
+    for (const field of ["tanggalPengajuan", "namaPengaju", "unitFakultas", "prioritas", "tanggalDibutuhkan"]) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field];
+    }
+
     // Update alasan jika ada di request body
     if (req.body.alasan !== undefined) {
       updateData.alasan = req.body.alasan;
@@ -55,6 +59,10 @@ exports.updatePengajuan = async (req, res) => {
     // Update catatanPerbaikan jika ada di request body
     if (req.body.catatanPerbaikan !== undefined) {
       updateData.catatanPerbaikan = req.body.catatanPerbaikan;
+    }
+
+    if (req.body.kembaliKe !== undefined) {
+      updateData.kembaliKe = req.body.kembaliKe;
     }
 
     // Update daftarBarang jika ada di request body

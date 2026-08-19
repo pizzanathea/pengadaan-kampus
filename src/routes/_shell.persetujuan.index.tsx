@@ -244,7 +244,11 @@ function PersetujuanPage() {
                       </td>
                       <td className="px-5 py-3 text-right">
                         <Button size="sm" variant="outline" asChild>
-                          <Link to="/persetujuan/$id" params={{ id: p.nomor }}>
+                          <Link
+                            to="/persetujuan/$id"
+                            params={{ id: p.nomor }}
+                            search={{ role }}
+                          >
                             <Eye className="size-4" aria-hidden /> Tinjau
                           </Link>
                         </Button>
@@ -278,7 +282,7 @@ function PersetujuanPage() {
                     <dd className="text-right font-medium">{formatRupiah(totalNilai(p))}</dd>
                   </dl>
                   <Button size="sm" variant="outline" className="w-full" asChild>
-                    <Link to="/persetujuan/$id" params={{ id: p.nomor }}>
+                    <Link to="/persetujuan/$id" params={{ id: p.nomor }} search={{ role }}>
                       Tinjau Pengajuan
                     </Link>
                   </Button>

@@ -5,7 +5,8 @@
     | "ditolak"
     | "diproses"
     | "selesai"
-    | "dibatalkan";
+    | "dibatalkan"
+    | "perlu_perbaikan";
 
   export type Prioritas = "Rendah" | "Sedang" | "Tinggi" | "Mendesak";
 
@@ -17,6 +18,7 @@
   diproses: "Sedang Diproses",
   selesai: "Selesai",
   dibatalkan: "Dibatalkan",
+  perlu_perbaikan: "Perlu Perbaikan",
 };
 
   export const UNIT_LIST = [
@@ -58,7 +60,10 @@
     prioritas: Prioritas;
     tanggalDibutuhkan: string;
     status: StatusPengajuan;
+    kembaliKe?: "menunggu" | "menunggu_2";
     alasan: string;
+    alasanPenolakan?: string;
+    catatanPerbaikan?: string;
     lampiran: { nama: string; ukuran: string }[];
     barang: ItemBarang[];
   };

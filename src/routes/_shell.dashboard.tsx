@@ -124,13 +124,13 @@ function DashboardPage() {
           <dl className="space-y-4">
             <div>
               <dt className="text-sm text-muted-foreground">Total estimasi nilai</dt>
-              <dd className="mt-1 text-xl font-semibold break-words sm:text-2xl">
+              <dd className="mt-1 text-xl font-semibold wrap-break-word sm:text-2xl">
                 {formatRupiah(PENGAJUAN.reduce((s, p) => s + totalNilai(p), 0))}
               </dd>
             </div>
             <div className="border-t border-border pt-4">
               <dt className="text-sm text-muted-foreground">Menunggu persetujuan</dt>
-              <dd className="mt-1 text-base font-medium break-words">
+              <dd className="mt-1 text-base font-medium wrap-break-word">
                 {formatRupiah(
                   PENGAJUAN.filter((p) => p.status === "menunggu").reduce(
                     (s, p) => s + totalNilai(p),
@@ -141,7 +141,7 @@ function DashboardPage() {
             </div>
             <div className="border-t border-border pt-4">
               <dt className="text-sm text-muted-foreground">Sudah selesai</dt>
-              <dd className="mt-1 text-base font-medium break-words">
+              <dd className="mt-1 text-base font-medium wrap-break-word">
                 {formatRupiah(
                   PENGAJUAN.filter((p) => p.status === "selesai").reduce(
                     (s, p) => s + totalNilai(p),
@@ -166,7 +166,7 @@ function DashboardPage() {
       >
         {/* Desktop: tabel */}
         <div className="table-scroll hidden md:block">
-          <table className="w-full min-w-[52rem] text-sm">
+          <table className="w-full min-w-208 text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
                 <th className="px-5 py-3 font-medium">Nomor</th>
@@ -215,7 +215,11 @@ function DashboardPage() {
         <ul className="divide-y divide-border md:hidden">
           {terbaru.map((p) => (
             <li key={p.nomor} className="p-4">
-              <Link to="/pengajuan/$id" params={{ id: p.nomor }} className="block min-w-0">
+              <Link
+                to="/pengajuan/$id"
+                params={{ id: p.nomor }}
+                className="block min-w-0"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <p className="truncate text-sm font-medium">{p.nomor}</p>
                   <StatusBadge status={p.status} />

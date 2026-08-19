@@ -21,7 +21,7 @@ export function InformasiPengajuan({ p }: { p: Pengajuan }) {
         {items.map((i) => (
           <div key={i.label} className="min-w-0">
             <dt className="text-xs text-muted-foreground">{i.label}</dt>
-            <dd className="mt-1 text-sm font-medium break-words">{i.nilai}</dd>
+            <dd className="mt-1 text-sm font-medium wrap-break-word">{i.nilai}</dd>
           </div>
         ))}
       </dl>
@@ -33,7 +33,7 @@ export function DaftarBarang({ p }: { p: Pengajuan }) {
   return (
     <Panel judul="Daftar Barang" deskripsi={`${p.barang.length} jenis barang diajukan`} padat>
       <div className="table-scroll hidden md:block">
-        <table className="w-full min-w-[46rem] text-sm">
+        <table className="w-full min-w-184 text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
               <th className="px-5 py-3 font-medium">Nama Barang</th>
@@ -77,7 +77,7 @@ export function DaftarBarang({ p }: { p: Pengajuan }) {
         {p.barang.map((b) => (
           <li key={b.nama + b.spesifikasi} className="space-y-2 p-4">
             <p className="text-sm font-medium">{b.nama}</p>
-            <p className="text-xs text-muted-foreground break-words">
+            <p className="text-xs text-muted-foreground wrap-break-word">
               {b.kategori} · {b.spesifikasi}
             </p>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
@@ -105,7 +105,7 @@ export function AlasanDanLampiran({ p }: { p: Pengajuan }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">
       <Panel judul="Alasan Pengajuan">
-        <p className="text-sm leading-relaxed text-muted-foreground break-words">{p.alasan}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground wrap-break-word">{p.alasan}</p>
       </Panel>
       <Panel judul="Lampiran">
         {p.lampiran.length === 0 ? (
@@ -126,6 +126,33 @@ export function AlasanDanLampiran({ p }: { p: Pengajuan }) {
         )}
       </Panel>
     </div>
+  );
+}
+
+export function CatatanKeputusan({ p }: { p: Pengajuan }) {
+  if (!p.alasanPenolakan && !p.catatanPerbaikan) return null;
+
+  return (
+    <Panel judul="Alasan Keputusan">
+      <div className="space-y-4 text-sm">
+        {p.alasanPenolakan ? (
+          <div>
+            <p className="font-medium text-destructive">Alasan Penolakan</p>
+            <p className="mt-1 whitespace-pre-wrap leading-relaxed text-muted-foreground">
+              {p.alasanPenolakan}
+            </p>
+          </div>
+        ) : null}
+        {p.catatanPerbaikan ? (
+          <div>
+            <p className="font-medium text-amber-700 dark:text-amber-400">Catatan Perbaikan</p>
+            <p className="mt-1 whitespace-pre-wrap leading-relaxed text-muted-foreground">
+              {p.catatanPerbaikan}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </Panel>
   );
 }
 

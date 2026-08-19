@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, Search, Eye } from "lucide-react";
+import { Plus, Search, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import {
 import { Panel, PageHeader, EmptyState } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
 import {
-  LABEL_STATUS,
   UNIT_LIST,
   formatRupiah,
   formatTanggal,
@@ -24,7 +23,7 @@ import {
   totalKuantitas,
   ringkasanBarang,
 } from "@/data/pengadaan";
-import { mapBackendPengajuan } from "@/lib/api";
+import { mapBackendPengajuan, apiUpdatePengajuan } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/pengajuan/")({
   head: () => ({
@@ -42,13 +41,15 @@ export const Route = createFileRoute("/_shell/pengajuan/")({
 function PengajuanPage() {
   const [listPengajuan, setListPengajuan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mengirimUlang, setMengirimUlang] = useState<string | null>(null);
 
   const [cari, setCari] = useState("");
   const [status, setStatus] = useState("semua");
   const [unit, setUnit] = useState("semua");
   const [tanggal, setTanggal] = useState("");
 
-  useEffect(() => {
+  const muatData = () => {
+    setLoading(true);
     fetch("http://localhost:5000/api/pengajuan")
       .then((res) => res.json())
       .then((result) => {
@@ -63,7 +64,34 @@ function PengajuanPage() {
         toast.error("Terjadi kesalahan koneksi ke server");
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    muatData();
   }, []);
+
+  const handleKirimUlang = async (p: any) => {
+    setMengirimUlang(p.id);
+    try {
+      // kembaliKe dari backend nentuin balik ke tahap mana — kalau gak ada
+      // (data lama), default aman ke "menunggu" (mulai dari Persetujuan 1 lagi).
+      const statusBaru = p.kembaliKe || "menunggu";
+      await apiUpdatePengajuan(p.id, { statusApproval: statusBaru });
+      toast.success("Pengajuan dikirim ulang", {
+        description:
+          statusBaru === "menunggu_2"
+            ? `${p.nomor} langsung diteruskan ke Persetujuan Keuangan.`
+            : `${p.nomor} diteruskan ke Persetujuan 1.`,
+      });
+      muatData();
+    } catch (e) {
+      toast.error("Gagal mengirim ulang pengajuan", {
+        description: e instanceof Error ? e.message : "Terjadi kesalahan koneksi ke server.",
+      });
+    } finally {
+      setMengirimUlang(null);
+    }
+  };
 
   const data = useMemo(
     () =>
@@ -82,7 +110,7 @@ function PengajuanPage() {
           (!tanggal || p.tanggal === tanggal)
         );
       }),
-    [listPengajuan, cari, status, unit, tanggal]
+    [listPengajuan, cari, status, unit, tanggal],
   );
 
   return (
@@ -104,7 +132,10 @@ function PengajuanPage() {
           <div className="space-y-1.5">
             <Label htmlFor="cari">Cari</Label>
             <div className="relative">
-              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Search
+                className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
               <Input
                 id="cari"
                 value={cari}
@@ -125,6 +156,7 @@ function PengajuanPage() {
                 <SelectItem value="semua">Semua status</SelectItem>
                 <SelectItem value="menunggu">Menunggu Persetujuan</SelectItem>
                 <SelectItem value="menunggu_2">Menunggu Persetujuan Keuangan</SelectItem>
+                <SelectItem value="perlu_perbaikan">Perlu Perbaikan</SelectItem>
                 <SelectItem value="disetujui">Disetujui</SelectItem>
                 <SelectItem value="ditolak">Ditolak</SelectItem>
                 <SelectItem value="diproses">Sedang Diproses</SelectItem>
@@ -187,11 +219,26 @@ function PengajuanPage() {
                       <StatusBadge status={p.status} />
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/pengajuan/$id" params={{ id: p.id }}>
-                          <Eye className="size-4" /> Detail
-                        </Link>
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        {p.status === "perlu_perbaikan" ? (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={mengirimUlang === p.id}
+                            onClick={() => handleKirimUlang(p)}
+                          >
+                            <RefreshCw className="size-4" aria-hidden /> Kirim Ulang
+                          </Button>
+                        ) : null}
+                        <Button variant="outline" size="sm" asChild>
+                          <Link
+                            to="/pengajuan/$id"
+                            params={{ id: p.id }}
+                          >
+                            <Eye className="size-4" /> Detail
+                          </Link>
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -24,14 +24,15 @@ export type BackendPengajuan = {
   lampiran: string[];
   estimasiTotal: number;
   statusApproval: string;
+  alasanPenolakan?: string;
+  catatanPerbaikan?: string;
+  kembaliKe?: string;
   createdAt?: string;
 };
 
 export function mapBackendPengajuan(b: BackendPengajuan): Pengajuan {
-  let normalizedStatus = b.statusApproval || "menunggu";
-  if (normalizedStatus === "Menunggu Review") normalizedStatus = "menunggu";
-  if (normalizedStatus === "Disetujui") normalizedStatus = "disetujui";
-  if (normalizedStatus === "Ditolak") normalizedStatus = "ditolak";
+  const kembaliKe =
+    b.kembaliKe === "menunggu" || b.kembaliKe === "menunggu_2" ? b.kembaliKe : undefined;
 
   return {
     id: b._id,
@@ -41,8 +42,11 @@ export function mapBackendPengajuan(b: BackendPengajuan): Pengajuan {
     unit: b.unitFakultas,
     prioritas: b.prioritas as Prioritas,
     tanggalDibutuhkan: b.tanggalDibutuhkan,
-    status: normalizedStatus as StatusPengajuan,
+    status: (b.statusApproval as StatusPengajuan) || "menunggu",
+    ...(kembaliKe ? { kembaliKe } : {}),
     alasan: b.alasan,
+    ...(b.alasanPenolakan ? { alasanPenolakan: b.alasanPenolakan } : {}),
+    ...(b.catatanPerbaikan ? { catatanPerbaikan: b.catatanPerbaikan } : {}),
     lampiran: (b.lampiran || []).map((nama) => ({ nama, ukuran: "-" })),
     barang: b.daftarBarang,
   };
@@ -56,19 +60,25 @@ export async function apiFetchPengajuanList(): Promise<BackendPengajuan[]> {
   return json.data as BackendPengajuan[];
 }
 
-export async function apiUpdateStatusPengajuan(
+/** Update pengajuan dengan field apa aja (status, alasan, catatan, dll). */
+export async function apiUpdatePengajuan(
   id: string,
-  statusApproval: string,
-  alasanPenolakan?: string,
-  catatanPerbaikan?: string,
+  patch: Record<string, unknown>,
 ): Promise<BackendPengajuan> {
   const res = await fetch(`${API_BASE_URL}/api/pengajuan/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ statusApproval, alasanPenolakan, catatanPerbaikan }),
+    body: JSON.stringify(patch),
   });
-  if (!res.ok) throw new Error("Gagal memperbarui status pengajuan.");
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || "Gagal memperbarui status pengajuan.");
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(json?.message || "Gagal memperbarui pengajuan.");
+  }
+  if (!json.success) throw new Error(json.message || "Gagal memperbarui pengajuan.");
   return json.data as BackendPengajuan;
+}
+
+/** Alias lama, cuma update status doang — tetep ada buat jaga-jaga kalau ada yang masih makai. */
+export function apiUpdateStatusPengajuan(id: string, statusApproval: string) {
+  return apiUpdatePengajuan(id, { statusApproval });
 }
