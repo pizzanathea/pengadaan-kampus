@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -24,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageHeader, Panel } from "@/components/ui-kit";
-import { PENGGUNA, ROLE_LIST, UNIT_LIST as INITIAL_UNIT_LIST } from "@/data/pengadaan";
+import { PENGGUNA, ROLE_LIST } from "@/data/pengadaan";
 
 export const Route = createFileRoute("/_shell/pengaturan")({
   head: () => ({
@@ -35,7 +33,7 @@ export const Route = createFileRoute("/_shell/pengaturan")({
         content:
           "Atur profil kampus, profil pengguna, pengguna & role, penomoran dokumen, serta preferensi notifikasi sistem pengadaan.",
       },
-      { property: "og:title", content: "Pengaturan — Sistem Pengadaan Barang Kampus" },
+      { property: "og:title", content: "Pengaturan — Sistem Pengadaan Kampus" },
       { property: "og:description", content: "Kelola konfigurasi sistem pengadaan kampus." },
     ],
   }),
@@ -45,27 +43,77 @@ export const Route = createFileRoute("/_shell/pengaturan")({
 function PengaturanPage() {
   const [tambahTerbuka, setTambahTerbuka] = useState(false);
   
-  // State untuk manajemen Unit
-  const [unitList, setUnitList] = useState<string[]>(INITIAL_UNIT_LIST);
+  // State untuk manajemen Unit dari Database
+  const [unitList, setUnitList] = useState<string[]>([]);
+  const [loadingUnit, setLoadingUnit] = useState(true);
   const [tambahUnitTerbuka, setTambahUnitTerbuka] = useState(false);
   const [namaUnitBaru, setNamaUnitBaru] = useState("");
 
-  const handleTambahUnit = (e: React.FormEvent) => {
+  // Ambil data unit dari backend saat halaman dimuat
+  useEffect(() => {
+    fetch("http://localhost:5000/api/unit")
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          const units = result.data.map((u: any) => (typeof u === "string" ? u : u.nama));
+          setUnitList(units);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal memuat unit:", err);
+      })
+      .finally(() => setLoadingUnit(false));
+  }, []);
+
+  const handleTambahUnit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!namaUnitBaru.trim()) return;
-    if (unitList.includes(namaUnitBaru.trim())) {
+    const trimmedName = namaUnitBaru.trim();
+    if (!trimmedName) return;
+
+    if (unitList.includes(trimmedName)) {
       toast.error("Unit sudah terdaftar");
       return;
     }
-    setUnitList([...unitList, namaUnitBaru.trim().toString()]);
-    setNamaUnitBaru("");
-    setTambahUnitTerbuka(false);
-    toast.success("Unit berhasil ditambahkan");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/unit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama: trimmedName }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setUnitList([...unitList, trimmedName]);
+        setNamaUnitBaru("");
+        setTambahUnitTerbuka(false);
+        toast.success("Unit berhasil ditambahkan ke database");
+      } else {
+        toast.error("Gagal menambah unit: " + result.message);
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
   };
 
-  const handleHapusUnit = (unitTarget: string) => {
-    setUnitList(unitList.filter((u) => u !== unitTarget));
-    toast.success(`Unit ${unitTarget} berhasil dihapus`);
+  const handleHapusUnit = async (unitTarget: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/unit/${encodeURIComponent(unitTarget)}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setUnitList(unitList.filter((u) => u !== unitTarget));
+        toast.success(`Unit ${unitTarget} berhasil dihapus`);
+      } else {
+        toast.error("Gagal menghapus unit: " + result.message);
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
   };
 
   return (
@@ -228,7 +276,7 @@ function PengaturanPage() {
           </Panel>
         </TabsContent>
 
-        {/* Tab Baru: Manajemen Unit */}
+        {/* Tab Manajemen Unit Terhubung ke Database */}
         <TabsContent value="unit" className="mt-4">
           <Panel
             judul="Daftar Unit / Fakultas"
@@ -240,50 +288,58 @@ function PengaturanPage() {
             }
             padat
           >
-            <div className="table-scroll hidden md:block">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
-                    <th className="px-5 py-3 font-medium">Nama Unit</th>
-                    <th className="px-5 py-3 text-right font-medium">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unitList.map((unitName) => (
-                    <tr key={unitName} className="border-b border-border last:border-0">
-                      <td className="px-5 py-3 font-medium">{unitName}</td>
-                      <td className="px-5 py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Hapus ${unitName}`}
-                          className="text-destructive hover:text-destructive size-8"
-                          onClick={() => handleHapusUnit(unitName)}
-                        >
-                          <Trash2 className="size-4" aria-hidden />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {loadingUnit ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">Memuat daftar unit...</p>
+            ) : unitList.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">Belum ada unit tersedia di database.</p>
+            ) : (
+              <>
+                <div className="table-scroll hidden md:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
+                        <th className="px-5 py-3 font-medium">Nama Unit</th>
+                        <th className="px-5 py-3 text-right font-medium">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unitList.map((unitName) => (
+                        <tr key={unitName} className="border-b border-border last:border-0">
+                          <td className="px-5 py-3 font-medium">{unitName}</td>
+                          <td className="px-5 py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Hapus ${unitName}`}
+                              className="text-destructive hover:text-destructive size-8"
+                              onClick={() => handleHapusUnit(unitName)}
+                            >
+                              <Trash2 className="size-4" aria-hidden />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-            <ul className="divide-y divide-border md:hidden">
-              {unitList.map((unitName) => (
-                <li key={unitName} className="flex items-center justify-between p-4">
-                  <p className="text-sm font-medium">{unitName}</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive h-8 px-2"
-                    onClick={() => handleHapusUnit(unitName)}
-                  >
-                    Hapus
-                  </Button>
-                </li>
-              ))}
-            </ul>
+                <ul className="divide-y divide-border md:hidden">
+                  {unitList.map((unitName) => (
+                    <li key={unitName} className="flex items-center justify-between p-4">
+                      <p className="text-sm font-medium">{unitName}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive h-8 px-2"
+                        onClick={() => handleHapusUnit(unitName)}
+                      >
+                        Hapus
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </Panel>
         </TabsContent>
       </Tabs>

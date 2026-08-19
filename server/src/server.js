@@ -1,21 +1,25 @@
-require("dotenv").config(); // <-- BARIS INI WAJIB ADA DI PALING ATAS AGAR .env TERBACA
+require("dotenv").config(); // <-- Wajib di paling atas agar .env terbaca
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const path = require("path"); // <-- Tambahan modul path untuk direktori folder
+const path = require("path");
 
+// 1. Inisialisasi app HARUS DIBUAT PERTAMA KALI sebelum app.use()
 const app = express();
 
 // Middleware wajib
 app.use(cors());
 app.use(express.json());
 
-// --- TAMBAHAN: Agar folder 'uploads' bisa diakses publik via browser ---
+// --- Agar folder 'uploads' bisa diakses publik via browser ---
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// --- PASANG RUTE DI SINI ---
+// --- PASANG RUTE DI SINI (Setelah 'app' dideklarasikan) ---
 const pengajuanRoutes = require("./routes/pengajuan.routes");
 app.use("/api/pengajuan", pengajuanRoutes);
+
+const pengaturanRoutes = require('./routes/pengaturan.routes');
+app.use('/api/unit', pengaturanRoutes);
 
 // Sambungkan ke MongoDB & Jalankan Server
 mongoose.connect(process.env.MONGO_URI)
