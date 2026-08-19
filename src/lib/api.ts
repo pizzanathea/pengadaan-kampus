@@ -2,6 +2,14 @@ import type { Pengajuan, StatusPengajuan, Prioritas } from "@/data/pengadaan";
 
 export const API_BASE_URL = "http://localhost:5000";
 
+export function getLampiranUrl(nama: string) {
+  return `${API_BASE_URL}/uploads/${encodeURIComponent(nama)}`;
+}
+
+export function getLampiranDownloadUrl(nama: string) {
+  return `${API_BASE_URL}/api/pengajuan/lampiran/download/${encodeURIComponent(nama)}`;
+}
+
 export type BackendBarang = {
   nama: string;
   kategori: string;

@@ -14,6 +14,19 @@ app.use(express.json());
 // Serve folder uploads biar file bisa diakses publik lewat browser.
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
+app.get("/api/pengajuan/lampiran/download/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.join(__dirname, "..", "uploads", filename);
+  res.download(filePath, filename, (error) => {
+    if (error && !res.headersSent) {
+      res.status(error.code === "ENOENT" ? 404 : 500).json({
+        success: false,
+        message: "Lampiran tidak ditemukan.",
+      });
+    }
+  });
+});
+
 // --- PASANG RUTE DI SINI (Setelah 'app' dideklarasikan) ---
 const pengajuanRoutes = require("./routes/pengajuan.routes");
 app.use("/api/pengajuan", pengajuanRoutes);

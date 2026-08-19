@@ -3,7 +3,8 @@ import { formatRupiah, formatTanggal, totalNilai } from "@/data/pengadaan";
 import { Panel } from "@/components/ui-kit";
 import { StatusBadge, PrioritasBadge } from "@/components/status-badge";
 import { Timeline, type LangkahTimeline } from "@/components/timeline";
-import { FileText } from "lucide-react";
+import { Download, ExternalLink, FileText } from "lucide-react";
+import { getLampiranDownloadUrl, getLampiranUrl } from "@/lib/api";
 
 export function InformasiPengajuan({ p }: { p: Pengajuan }) {
   const items = [
@@ -120,6 +121,24 @@ export function AlasanDanLampiran({ p }: { p: Pengajuan }) {
                 <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm">{l.nama}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">{l.ukuran}</span>
+                <a
+                  href={getLampiranUrl(l.nama)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`Lihat ${l.nama}`}
+                  aria-label={`Lihat ${l.nama}`}
+                  className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <ExternalLink className="size-4" aria-hidden />
+                </a>
+                <a
+                  href={getLampiranDownloadUrl(l.nama)}
+                  title={`Download ${l.nama}`}
+                  aria-label={`Download ${l.nama}`}
+                  className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <Download className="size-4" aria-hidden />
+                </a>
               </li>
             ))}
           </ul>
