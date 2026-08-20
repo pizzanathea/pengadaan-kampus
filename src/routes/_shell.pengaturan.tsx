@@ -141,15 +141,7 @@ function PengaturanPage() {
                 toast.success("Profil berhasil diperbarui");
               }}
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <span className="grid size-16 shrink-0 place-items-center rounded-full bg-primary-soft text-lg font-semibold text-secondary-foreground">
-                  BS
-                </span>
-                <div className="min-w-0 space-y-1.5">
-                  <Label htmlFor="foto">Foto Profil</Label>
-                  <Input id="foto" type="file" accept="image/*" />
-                </div>
-              </div>
+              
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="namaSaya">Nama</Label>
