@@ -24,6 +24,63 @@ exports.getAllPengajuan = async (req, res) => {
   }
 };
 
+exports.getLaporan = async (req, res) => {
+  try {
+    const { periode = String(new Date().getFullYear()), unit, status, kategori } = req.query;
+    const [tahun, semester] = String(periode).split("-");
+    const awalTahun = semester === "s1" ? `${tahun}-01-01` : semester === "s2" ? `${tahun}-07-01` : `${tahun}-01-01`;
+    const akhirTahun = semester === "s1" ? `${tahun}-07-01` : `${Number(tahun) + 1}-01-01`;
+    const filter = {
+      tanggalPengajuan: { $gte: awalTahun, $lt: akhirTahun },
+      ...(unit && unit !== "semua" ? { unitFakultas: unit } : {}),
+      ...(status && status !== "semua" ? { statusApproval: status } : {}),
+    };
+
+    let data = await Pengajuan.find(filter).sort({ tanggalPengajuan: 1, createdAt: 1 });
+    if (kategori && kategori !== "semua") {
+      data = data.filter((item) => item.daftarBarang.some((barang) => barang.kategori === kategori));
+    }
+
+    const perStatus = {};
+    const perUnit = {};
+    const perBulan = Array.from({ length: semester ? 6 : 12 }, (_, index) => ({
+      bulan: new Date(Number(tahun), index, 1).toLocaleDateString("id-ID", { month: "short" }),
+      jumlah: 0,
+    }));
+
+    let totalNilai = 0;
+    for (const pengajuan of data) {
+      const statusPengajuan = pengajuan.statusApproval;
+      perStatus[statusPengajuan] = (perStatus[statusPengajuan] || 0) + 1;
+      perUnit[pengajuan.unitFakultas] = (perUnit[pengajuan.unitFakultas] || 0) + 1;
+      const bulanMutlak = Number(pengajuan.tanggalPengajuan.slice(5, 7)) - 1;
+      const offsetSemester = semester === "s2" ? 6 : 0;
+      const bulan = bulanMutlak - offsetSemester;
+      if (bulan >= 0 && bulan < perBulan.length) perBulan[bulan].jumlah += 1;
+      totalNilai += (pengajuan.daftarBarang || []).reduce(
+        (total, barang) => total + (Number(barang.jumlah) || 0) * (Number(barang.harga) || 0),
+        0,
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      data,
+      ringkasan: {
+        totalPengajuan: data.length,
+        pengajuanDisetujui: data.filter((item) => ["disetujui", "diproses", "selesai"].includes(item.statusApproval)).length,
+        pengajuanDitolak: data.filter((item) => item.statusApproval === "ditolak").length,
+        totalNilai,
+      },
+      perStatus: Object.entries(perStatus).map(([status, jumlah]) => ({ status, jumlah })),
+      perUnit: Object.entries(perUnit).map(([unit, jumlah]) => ({ unit, jumlah })),
+      perBulan,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.updatePengajuan = async (req, res) => {
   try {
     const { id } = req.params;

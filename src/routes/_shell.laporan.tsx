@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bar,
@@ -13,6 +13,9 @@ import {
   YAxis,
 } from "recharts";
 import { FileSpreadsheet, FileText } from "lucide-react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import ExcelJS from "exceljs";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,14 +32,13 @@ import { StatusBadge } from "@/components/status-badge";
 import {
   KATEGORI_LIST,
   LABEL_STATUS,
-  PENGAJUAN,
-  PENGAJUAN_PER_BULAN,
   UNIT_LIST,
   formatRupiah,
   formatTanggal,
   ringkasanBarang,
   totalNilai,
 } from "@/data/pengadaan";
+import { apiFetchLaporan, mapBackendPengajuan, type LaporanResponse } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/laporan")({
   head: () => ({
@@ -67,49 +69,60 @@ function LaporanPage() {
   const [unit, setUnit] = useState("semua");
   const [status, setStatus] = useState("semua");
   const [kategori, setKategori] = useState("semua");
+  const [laporan, setLaporan] = useState<LaporanResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const data = useMemo(
-    () =>
-      PENGAJUAN.filter(
-        (p) =>
-          (unit === "semua" || p.unit === unit) &&
-          (status === "semua" || p.status === status) &&
-          (kategori === "semua" || p.barang.some((b) => b.kategori === kategori)),
-      ),
-    [unit, status, kategori],
-  );
+  useEffect(() => {
+    let aktif = true;
+    setLoading(true);
+    setError(null);
+    apiFetchLaporan({ periode, unit, status, kategori })
+      .then((hasil) => {
+        if (aktif) setLaporan(hasil);
+      })
+      .catch((e) => {
+        if (aktif) setError(e instanceof Error ? e.message : "Gagal memuat laporan.");
+      })
+      .finally(() => {
+        if (aktif) setLoading(false);
+      });
+    return () => {
+      aktif = false;
+    };
+  }, [periode, unit, status, kategori]);
+
+  const data = useMemo(() => (laporan?.data ?? []).map(mapBackendPengajuan), [laporan]);
 
   const kpi = [
-    { label: "Total Pengajuan", nilai: String(data.length) },
+    { label: "Total Pengajuan", nilai: String(laporan?.ringkasan.totalPengajuan ?? 0) },
     {
       label: "Pengajuan Disetujui",
       nilai: String(
-        data.filter((p) => ["disetujui", "diproses", "selesai"].includes(p.status)).length,
+        laporan?.ringkasan.pengajuanDisetujui ?? 0,
       ),
     },
     {
       label: "Pengajuan Ditolak",
-      nilai: String(data.filter((p) => p.status === "ditolak").length),
+      nilai: String(laporan?.ringkasan.pengajuanDitolak ?? 0),
     },
     {
       label: "Total Nilai Pengadaan",
-      nilai: formatRupiah(data.reduce((s, p) => s + totalNilai(p), 0)),
+      nilai: formatRupiah(laporan?.ringkasan.totalNilai ?? 0),
     },
   ];
 
-  const perStatus = (["menunggu", "disetujui", "ditolak", "diproses", "selesai"] as const).map(
-    (s) => ({
-      status: LABEL_STATUS[s],
-      ringkas: LABEL_STATUS[s].split(" ")[0],
-      jumlah: data.filter((p) => p.status === s).length,
-    }),
-  );
+  const perStatus = (laporan?.perStatus ?? []).map((item) => ({
+    status: LABEL_STATUS[item.status as keyof typeof LABEL_STATUS] ?? item.status,
+    ringkas: (LABEL_STATUS[item.status as keyof typeof LABEL_STATUS] ?? item.status).split(" ")[0],
+    jumlah: item.jumlah,
+  }));
 
-  const perUnit = UNIT_LIST.map((u) => ({
-    unit: u,
-    ringkas: u.replace("Fakultas ", "F. "),
-    jumlah: data.filter((p) => p.unit === u).length,
-  })).filter((u) => u.jumlah > 0);
+  const perUnit = (laporan?.perUnit ?? []).map((item) => ({
+    unit: item.unit,
+    ringkas: item.unit.replace("Fakultas ", "F. "),
+    jumlah: item.jumlah,
+  }));
 
   const tooltipStyle = {
     background: "var(--card)",
@@ -117,6 +130,93 @@ function LaporanPage() {
     borderRadius: 8,
     fontSize: 12,
   } as const;
+
+  const namaFile = `laporan-pengadaan-${periode}`;
+
+  const eksporExcel = async () => {
+    if (data.length === 0) {
+      toast.error("Tidak ada data untuk diekspor.");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Rincian Laporan");
+    sheet.views = [{ state: "frozen", ySplit: 5 }];
+    sheet.mergeCells("A1:G1");
+    sheet.getCell("A1").value = "LAPORAN PENGADAAN BARANG KAMPUS";
+    sheet.getCell("A1").font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+    sheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF173F5F" } };
+    sheet.getCell("A1").alignment = { horizontal: "center" };
+    sheet.mergeCells("A2:G2");
+    sheet.getCell("A2").value = `Periode: ${periode} | Unit: ${unit} | Status: ${status} | Kategori: ${kategori}`;
+    sheet.getCell("A2").font = { italic: true, color: { argb: "FF5B6770" } };
+    sheet.mergeCells("A3:G3");
+    sheet.getCell("A3").value = `Total pengajuan: ${data.length} | Total nilai: ${formatRupiah(laporan?.ringkasan.totalNilai ?? 0)}`;
+    sheet.getCell("A3").font = { bold: true, color: { argb: "FF173F5F" } };
+    sheet.addRow([]);
+    const header = sheet.addRow(["Nomor", "Tanggal", "Unit", "Pengaju", "Barang", "Nilai", "Status"]);
+    header.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF20639B" } };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+    data.forEach((p) => {
+      const row = sheet.addRow([p.nomor, p.tanggal, p.unit, p.pengaju, ringkasanBarang(p), totalNilai(p), LABEL_STATUS[p.status]]);
+      row.getCell(6).numFmt = '"Rp" #,##0';
+      if (row.number % 2 === 0) row.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } }; });
+    });
+    sheet.columns = [
+      { width: 18 }, { width: 14 }, { width: 28 }, { width: 24 }, { width: 30 }, { width: 18 }, { width: 24 },
+    ];
+    sheet.autoFilter = { from: "A5", to: `G${sheet.rowCount}` };
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${namaFile}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("File Excel berhasil diunduh");
+  };
+
+  const eksporPdf = () => {
+    if (data.length === 0) {
+      toast.error("Tidak ada data untuk diekspor.");
+      return;
+    }
+
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+    pdf.setFillColor(23, 63, 95);
+    pdf.rect(0, 0, 210, 30, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(17);
+    pdf.text("Laporan Pengadaan Barang", 14, 15);
+    pdf.setFontSize(9);
+    pdf.text("Sistem Pengadaan Barang Kampus", 14, 22);
+    pdf.setTextColor(40, 50, 60);
+    pdf.setFontSize(9);
+    pdf.text(`Periode: ${periode} | Unit: ${unit} | Status: ${status} | Kategori: ${kategori}`, 14, 39);
+    pdf.setFillColor(241, 245, 249);
+    pdf.roundedRect(14, 45, 182, 18, 3, 3, "F");
+    pdf.setFontSize(9);
+    pdf.text(`Total Pengajuan: ${data.length}`, 20, 53);
+    pdf.text(`Disetujui: ${laporan?.ringkasan.pengajuanDisetujui ?? 0}`, 75, 53);
+    pdf.text(`Ditolak: ${laporan?.ringkasan.pengajuanDitolak ?? 0}`, 120, 53);
+    pdf.text(`Nilai: ${formatRupiah(laporan?.ringkasan.totalNilai ?? 0)}`, 155, 53);
+    autoTable(pdf, {
+      startY: 70,
+      head: [["Nomor", "Tanggal", "Unit", "Pengaju", "Barang", "Nilai", "Status"]],
+      body: data.map((p) => [p.nomor, formatTanggal(p.tanggal), p.unit, p.pengaju, ringkasanBarang(p), formatRupiah(totalNilai(p)), LABEL_STATUS[p.status]]),
+      theme: "grid",
+      headStyles: { fillColor: [32, 99, 155], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [241, 245, 249] },
+      styles: { fontSize: 7, cellPadding: 2, textColor: [40, 50, 60] },
+      columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 23 }, 2: { cellWidth: 30 }, 3: { cellWidth: 25 }, 4: { cellWidth: 28 }, 5: { cellWidth: 25 }, 6: { cellWidth: 26 } },
+    });
+    pdf.save(`${namaFile}.pdf`);
+    toast.success("File PDF berhasil diunduh");
+  };
 
   return (
     <>
@@ -128,14 +228,16 @@ function LaporanPage() {
             <Button
               variant="outline"
               className="w-full sm:w-auto"
-              onClick={() => toast.success("Laporan diekspor ke Excel")}
+              onClick={eksporExcel}
+              disabled={loading}
             >
               <FileSpreadsheet className="size-4" aria-hidden /> Ekspor Excel
             </Button>
             <Button
               variant="outline"
               className="w-full sm:w-auto"
-              onClick={() => toast.success("Laporan diekspor ke PDF")}
+              onClick={eksporPdf}
+              disabled={loading}
             >
               <FileText className="size-4" aria-hidden /> Ekspor PDF
             </Button>
@@ -213,7 +315,7 @@ function LaporanPage() {
         {kpi.map((k) => (
           <div key={k.label} className="surface min-w-0 p-4">
             <p className="text-xs text-muted-foreground sm:text-sm">{k.label}</p>
-            <p className="mt-2 text-lg font-semibold tracking-tight break-words sm:text-xl">
+            <p className="mt-2 text-lg font-semibold tracking-tight wrap-break-word sm:text-xl">
               {k.nilai}
             </p>
           </div>
@@ -225,7 +327,7 @@ function LaporanPage() {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={PENGAJUAN_PER_BULAN}
+                data={laporan?.perBulan ?? []}
                 margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -336,7 +438,11 @@ function LaporanPage() {
         deskripsi={`${data.length} pengajuan pada periode terpilih`}
         padat
       >
-        {data.length === 0 ? (
+        {loading ? (
+          <p className="p-6 text-center text-sm text-muted-foreground">Memuat laporan...</p>
+        ) : error ? (
+          <EmptyState judul="Gagal memuat laporan" deskripsi={error} />
+        ) : data.length === 0 ? (
           <EmptyState
             judul="Data laporan kosong"
             deskripsi="Tidak ada pengajuan yang sesuai dengan filter laporan."
@@ -344,7 +450,7 @@ function LaporanPage() {
         ) : (
           <>
             <div className="table-scroll hidden md:block">
-              <table className="w-full min-w-[54rem] text-sm">
+              <table className="w-full min-w-216 text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
                     <th className="px-5 py-3 font-medium">Nomor</th>

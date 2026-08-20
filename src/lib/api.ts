@@ -90,3 +90,31 @@ export async function apiUpdatePengajuan(
 export function apiUpdateStatusPengajuan(id: string, statusApproval: string) {
   return apiUpdatePengajuan(id, { statusApproval });
 }
+
+export type LaporanResponse = {
+  data: BackendPengajuan[];
+  ringkasan: {
+    totalPengajuan: number;
+    pengajuanDisetujui: number;
+    pengajuanDitolak: number;
+    totalNilai: number;
+  };
+  perStatus: { status: string; jumlah: number }[];
+  perUnit: { unit: string; jumlah: number }[];
+  perBulan: { bulan: string; jumlah: number }[];
+};
+
+export async function apiFetchLaporan(params: {
+  periode: string;
+  unit: string;
+  status: string;
+  kategori: string;
+}): Promise<LaporanResponse> {
+  const query = new URLSearchParams(params);
+  const res = await fetch(`${API_BASE_URL}/api/pengajuan/laporan?${query}`);
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) {
+    throw new Error(json?.message || "Gagal mengambil laporan pengadaan.");
+  }
+  return json as LaporanResponse;
+}
