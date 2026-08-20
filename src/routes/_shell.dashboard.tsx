@@ -66,6 +66,10 @@ function DashboardPage() {
   }, []);
 
   const jumlahStatus = (status: string) => {
+    if (status === "diproses") {
+      // Gabungkan pengajuan yang statusnya "diproses" ATAU "disetujui"
+      return pengajuanList.filter((p) => p.status === "diproses" || p.status === "disetujui").length;
+    }
     return pengajuanList.filter((p) => p.status === status).length;
   };
 
