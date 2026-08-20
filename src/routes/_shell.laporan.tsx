@@ -64,6 +64,9 @@ const WARNA = [
   "var(--chart-5)",
 ];
 
+const tahunSekarang = new Date().getFullYear();
+const pilihanTahun = Array.from({ length: 5 }, (_, index) => String(tahunSekarang - 2 + index));
+
 function LaporanPage() {
   const [periode, setPeriode] = useState("2026");
   const [unit, setUnit] = useState("semua");
@@ -77,6 +80,7 @@ function LaporanPage() {
     let aktif = true;
     setLoading(true);
     setError(null);
+    setLaporan(null);
     apiFetchLaporan({ periode, unit, status, kategori })
       .then((hasil) => {
         if (aktif) setLaporan(hasil);
@@ -248,15 +252,17 @@ function LaporanPage() {
       <Panel>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-1.5">
-            <Label>Periode</Label>
+            <Label>Tahun</Label>
             <Select value={periode} onValueChange={setPeriode}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2026">Tahun 2026</SelectItem>
-                <SelectItem value="2026-s1">Semester 1 2026</SelectItem>
-                <SelectItem value="2026-s2">Semester 2 2026</SelectItem>
+                {pilihanTahun.map((tahun) => (
+                  <SelectItem key={tahun} value={tahun}>
+                    Tahun {tahun}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -435,7 +441,7 @@ function LaporanPage() {
 
       <Panel
         judul="Rincian Laporan"
-        deskripsi={`${data.length} pengajuan pada periode terpilih`}
+        deskripsi={`${data.length} pengajuan pada tahun terpilih`}
         padat
       >
         {loading ? (
