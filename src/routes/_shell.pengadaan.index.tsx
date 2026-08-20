@@ -123,7 +123,7 @@ function PengadaanPage() {
         ) : (
           <>
             <div className="table-scroll hidden lg:block">
-              <table className="w-full min-w-[62rem] text-sm">
+              <table className="w-full min-w-248 text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
                     <th className="px-5 py-3 font-medium">Nomor Pengajuan</th>
@@ -206,7 +206,11 @@ function PengadaanPage() {
                       <dd className="text-right">{formatTanggal(d.tanggalPengajuan)}</dd>
                     </dl>
                     <Button size="sm" variant="outline" className="w-full" asChild>
-                      <Link to="/pengajuan/$id" params={{ id: d.nomorPengajuan }}>
+                      <Link
+                        to="/pengajuan/$id"
+                        params={{ id: d.nomorPengajuan }}
+                        search={{ role: "persetujuan_1" }}
+                      >
                         Lihat Detail
                       </Link>
                     </Button>

@@ -188,6 +188,7 @@ function DashboardPage() {
                     <Link
                       to="/pengajuan/$id"
                       params={{ id: p.nomor }}
+                      search={{ role: "persetujuan_1" }}
                       className="underline-offset-4 hover:underline"
                     >
                       {p.nomor}
@@ -218,6 +219,7 @@ function DashboardPage() {
               <Link
                 to="/pengajuan/$id"
                 params={{ id: p.nomor }}
+                search={{ role: "persetujuan_1" }}
                 className="block min-w-0"
               >
                 <div className="flex items-start justify-between gap-3">

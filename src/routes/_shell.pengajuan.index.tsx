@@ -234,6 +234,7 @@ function PengajuanPage() {
                           <Link
                             to="/pengajuan/$id"
                             params={{ id: p.id }}
+                            search={{ role: "persetujuan_1" }}
                           >
                             <Eye className="size-4" /> Detail
                           </Link>
