@@ -139,8 +139,8 @@ function PengadaanPage() {
                 <tbody>
                   {data.map((d) => {
                     const idUnik = d._id || d.nomorPengajuan;
-                    const ringkasanBarang = d.daftarBarang && d.daftarBarang.length > 0 
-                      ? `${d.daftarBarang[0].nama} ${d.daftarBarang.length > 1 ? `(+${d.daftarBarang.length - 1} lainnya)` : ""}` 
+                    const ringkasanBarang = d.daftarBarang && d.daftarBarang.length > 0
+                      ? `${d.daftarBarang[0].nama} ${d.daftarBarang.length > 1 ? `(+${d.daftarBarang.length - 1} lainnya)` : ""}`
                       : "-";
 
                     return (
@@ -180,8 +180,8 @@ function PengadaanPage() {
             <ul className="divide-y divide-border lg:hidden">
               {data.map((d) => {
                 const idUnik = d._id || d.nomorPengajuan;
-                const ringkasanBarang = d.daftarBarang && d.daftarBarang.length > 0 
-                  ? `${d.daftarBarang[0].nama} ${d.daftarBarang.length > 1 ? `(+${d.daftarBarang.length - 1} lainnya)` : ""}` 
+                const ringkasanBarang = d.daftarBarang && d.daftarBarang.length > 0
+                  ? `${d.daftarBarang[0].nama} ${d.daftarBarang.length > 1 ? `(+${d.daftarBarang.length - 1} lainnya)` : ""}`
                   : "-";
 
                 return (

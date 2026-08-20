@@ -1,18 +1,12 @@
+import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FileText, Clock, CheckCircle2, Loader2, PackageCheck, Plus } from "lucide-react";
+import { FileText, Clock, CheckCircle2, Loader2, PackageCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
-import {
-  PENGAJUAN,
-  LABEL_STATUS,
-  formatRupiah,
-  formatTanggal,
-  ringkasanBarang,
-  totalNilai,
-} from "@/data/pengadaan";
+import { LABEL_STATUS, formatRupiah, formatTanggal } from "@/data/pengadaan";
 
 export const Route = createFileRoute("/_shell/dashboard")({
   head: () => ({
@@ -33,28 +27,73 @@ export const Route = createFileRoute("/_shell/dashboard")({
   component: DashboardPage,
 });
 
-function jumlahStatus(status: string) {
-  return PENGAJUAN.filter((p) => p.status === status).length;
-}
-
-const KPI = [
-  { label: "Total Pengajuan", nilai: PENGAJUAN.length, icon: FileText },
-  { label: "Menunggu Persetujuan", nilai: jumlahStatus("menunggu"), icon: Clock },
-  { label: "Disetujui", nilai: jumlahStatus("disetujui"), icon: CheckCircle2 },
-  { label: "Sedang Diproses", nilai: jumlahStatus("diproses"), icon: Loader2 },
-  { label: "Selesai", nilai: jumlahStatus("selesai"), icon: PackageCheck },
-];
-
-const DATA_GRAFIK = (["menunggu", "disetujui", "ditolak", "diproses", "selesai"] as const).map(
-  (s) => ({
-    status: LABEL_STATUS[s],
-    ringkas: LABEL_STATUS[s].split(" ")[0],
-    jumlah: jumlahStatus(s),
-  }),
-);
-
 function DashboardPage() {
-  const terbaru = PENGAJUAN.slice(0, 6);
+  const [pengajuanList, setPengajuanList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Ambil data pengajuan dari database secara real-time
+  useEffect(() => {
+    fetch("http://localhost:5000/api/pengajuan")
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          const mapped = result.data.map((item: any) => {
+            const daftarBarang = Array.isArray(item.daftarBarang) ? item.daftarBarang : [];
+            // Hitung total nilai per item secara aman
+            const totalItemNilai = daftarBarang.reduce(
+              (sum: number, b: any) => sum + (Number(b.jumlah) || 0) * (Number(b.harga || b.perkiraanHarga) || 0),
+              0
+            );
+
+            return {
+              ...item,
+              nomor: item.nomorPengajuan,
+              pengaju: item.namaPengaju,
+              unit: item.unitFakultas,
+              status: item.statusApproval,
+              tanggal: item.tanggalPengajuan,
+              daftarBarang,
+              calculatedTotal: item.estimasiTotal || totalItemNilai,
+            };
+          });
+          setPengajuanList(mapped);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal memuat data pengajuan:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const jumlahStatus = (status: string) => {
+    return pengajuanList.filter((p) => p.status === status).length;
+  };
+
+  const KPI = [
+    { label: "Total Pengajuan", nilai: pengajuanList.length, icon: FileText },
+    { label: "Menunggu Persetujuan", nilai: jumlahStatus("menunggu"), icon: Clock },
+    { label: "Disetujui", nilai: jumlahStatus("disetujui"), icon: CheckCircle2 },
+    { label: "Sedang Diproses", nilai: jumlahStatus("diproses"), icon: Loader2 },
+    { label: "Selesai", nilai: jumlahStatus("selesai"), icon: PackageCheck },
+  ];
+
+  const DATA_GRAFIK = (["menunggu", "disetujui", "ditolak", "diproses", "selesai"] as const).map(
+    (s) => ({
+      status: LABEL_STATUS[s],
+      ringkas: LABEL_STATUS[s]?.split(" ")[0] || s,
+      jumlah: jumlahStatus(s),
+    }),
+  );
+
+  const terbaru = pengajuanList.slice(0, 6);
+
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -125,17 +164,16 @@ function DashboardPage() {
             <div>
               <dt className="text-sm text-muted-foreground">Total estimasi nilai</dt>
               <dd className="mt-1 text-xl font-semibold wrap-break-word sm:text-2xl">
-                {formatRupiah(PENGAJUAN.reduce((s, p) => s + totalNilai(p), 0))}
+                {formatRupiah(pengajuanList.reduce((s, p) => s + (p.calculatedTotal || 0), 0))}
               </dd>
             </div>
             <div className="border-t border-border pt-4">
               <dt className="text-sm text-muted-foreground">Menunggu persetujuan</dt>
               <dd className="mt-1 text-base font-medium wrap-break-word">
                 {formatRupiah(
-                  PENGAJUAN.filter((p) => p.status === "menunggu").reduce(
-                    (s, p) => s + totalNilai(p),
-                    0,
-                  ),
+                  pengajuanList
+                    .filter((p) => p.status === "menunggu")
+                    .reduce((s, p) => s + (p.calculatedTotal || 0), 0),
                 )}
               </dd>
             </div>
@@ -143,10 +181,9 @@ function DashboardPage() {
               <dt className="text-sm text-muted-foreground">Sudah selesai</dt>
               <dd className="mt-1 text-base font-medium wrap-break-word">
                 {formatRupiah(
-                  PENGAJUAN.filter((p) => p.status === "selesai").reduce(
-                    (s, p) => s + totalNilai(p),
-                    0,
-                  ),
+                  pengajuanList
+                    .filter((p) => p.status === "selesai")
+                    .reduce((s, p) => s + (p.calculatedTotal || 0), 0),
                 )}
               </dd>
             </div>
@@ -159,85 +196,95 @@ function DashboardPage() {
         deskripsi="Enam pengajuan terakhir yang masuk"
         aksi={
           <Button variant="outline" size="sm" asChild>
-            <Link to="/pengajuan">Lihat semua</Link>
+            <Link to="/pengajuan" search={{}}>Lihat semua</Link>
           </Button>
         }
         padat
       >
-        {/* Desktop: tabel */}
-        <div className="table-scroll hidden md:block">
-          <table className="w-full min-w-208 text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
-                <th className="px-5 py-3 font-medium">Nomor</th>
-                <th className="px-5 py-3 font-medium">Pengaju</th>
-                <th className="px-5 py-3 font-medium">Unit</th>
-                <th className="px-5 py-3 font-medium">Barang</th>
-                <th className="px-5 py-3 text-right font-medium">Nilai</th>
-                <th className="px-5 py-3 font-medium">Tanggal</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {terbaru.map((p) => (
-                <tr
-                  key={p.nomor}
-                  className="border-b border-border last:border-0 hover:bg-muted/50"
-                >
-                  <td className="px-5 py-3 font-medium whitespace-nowrap">
-                    <Link
-                      to="/pengajuan/$id"
-                      params={{ id: p.nomor }}
-                      search={{ role: "persetujuan_1" }}
-                      className="underline-offset-4 hover:underline"
+        {terbaru.length === 0 ? (
+          <p className="p-6 text-center text-sm text-muted-foreground">Belum ada data pengajuan.</p>
+        ) : (
+          <>
+            {/* Desktop: tabel */}
+            <div className="table-scroll hidden md:block">
+              <table className="w-full min-w-208 text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
+                    <th className="px-5 py-3 font-medium">Nomor</th>
+                    <th className="px-5 py-3 font-medium">Pengaju</th>
+                    <th className="px-5 py-3 font-medium">Unit</th>
+                    <th className="px-5 py-3 font-medium">Barang</th>
+                    <th className="px-5 py-3 text-right font-medium">Nilai</th>
+                    <th className="px-5 py-3 font-medium">Tanggal</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {terbaru.map((p) => (
+                    <tr
+                      key={p._id || p.nomor}
+                      className="border-b border-border last:border-0 hover:bg-muted/50"
                     >
-                      {p.nomor}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3">{p.pengaju}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{p.unit}</td>
-                  <td className="px-5 py-3">{ringkasanBarang(p)}</td>
-                  <td className="px-5 py-3 text-right whitespace-nowrap">
-                    {formatRupiah(totalNilai(p))}
-                  </td>
-                  <td className="px-5 py-3 whitespace-nowrap text-muted-foreground">
-                    {formatTanggal(p.tanggal)}
-                  </td>
-                  <td className="px-5 py-3">
-                    <StatusBadge status={p.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      <td className="px-5 py-3 font-medium whitespace-nowrap">
+                        <Link
+                          to="/pengajuan/$id"
+                          params={{ id: p.nomor }}
+                          search={{}}
+                          className="underline-offset-4 hover:underline"
+                        >
+                          {p.nomor}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3">{p.pengaju}</td>
+                      <td className="px-5 py-3 text-muted-foreground">{p.unit}</td>
+                      <td className="px-5 py-3">
+                        {p.daftarBarang.map((b: any) => b.nama).join(", ") || "-"}
+                      </td>
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                        {formatRupiah(p.calculatedTotal)}
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap text-muted-foreground">
+                        {formatTanggal(p.tanggal)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge status={p.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        {/* Mobile: list card */}
-        <ul className="divide-y divide-border md:hidden">
-          {terbaru.map((p) => (
-            <li key={p.nomor} className="p-4">
-              <Link
-                to="/pengajuan/$id"
-                params={{ id: p.nomor }}
-                search={{ role: "persetujuan_1" }}
-                className="block min-w-0"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="truncate text-sm font-medium">{p.nomor}</p>
-                  <StatusBadge status={p.status} />
-                </div>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {p.pengaju} · {p.unit}
-                </p>
-                <p className="mt-1 truncate text-sm">{ringkasanBarang(p)}</p>
-                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span>{formatTanggal(p.tanggal)}</span>
-                  <span className="font-medium text-foreground">{formatRupiah(totalNilai(p))}</span>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+            {/* Mobile: list card */}
+            <ul className="divide-y divide-border md:hidden">
+              {terbaru.map((p) => (
+                <li key={p._id || p.nomor} className="p-4">
+                  <Link
+                    to="/pengajuan/$id"
+                    params={{ id: p.nomor }}
+                    search={{}}
+                    className="block min-w-0"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="truncate text-sm font-medium">{p.nomor}</p>
+                      <StatusBadge status={p.status} />
+                    </div>
+                    <p className="mt-1 truncate text-sm text-muted-foreground">
+                      {p.pengaju} · {p.unit}
+                    </p>
+                    <p className="mt-1 truncate text-sm">
+                      {p.daftarBarang.map((b: any) => b.nama).join(", ") || "-"}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{formatTanggal(p.tanggal)}</span>
+                      <span className="font-medium text-foreground">{formatRupiah(p.calculatedTotal)}</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </Panel>
     </>
   );

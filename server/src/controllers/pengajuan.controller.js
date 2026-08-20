@@ -27,7 +27,7 @@ exports.getAllPengajuan = async (req, res) => {
 exports.updatePengajuan = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Ambil data lama di database
     const existingData = await Pengajuan.findById(id);
     if (!existingData) {
@@ -97,7 +97,7 @@ exports.updatePengajuan = async (req, res) => {
     }
 
     const updated = await Pengajuan.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
-    
+
     res.status(200).json({ success: true, message: "Berhasil diperbarui", data: updated });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

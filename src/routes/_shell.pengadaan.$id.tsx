@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_shell/pengadaan/$id")({
 
 function DetailPengadaanPage() {
   const { id } = Route.useParams();
-  
+
   const [pengajuan, setPengajuan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("diproses");
@@ -132,7 +132,7 @@ function DetailPengadaanPage() {
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Detail Proses</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">{pengajuan.nomorPengajuan}</span>
-           <StatusBadge status={status as any} />
+            <StatusBadge status={status as any} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Pengajuan {pengajuan.nomorPengajuan} · {pengajuan.unitFakultas} · {pengajuan.tanggalPengajuan}
@@ -170,14 +170,14 @@ function DetailPengadaanPage() {
             disabled={isSelesai || isDitolak || isPerluPerbaikan}
             onClick={handleTandaiSelesai}
           >
-            <CheckCheck className="size-4" aria-hidden /> 
-            {isDitolak 
-              ? "Pengajuan Ditolak" 
-              : isPerluPerbaikan 
-              ? "Menunggu Perbaikan" 
-              : isSelesai 
-              ? "Selesai" 
-              : "Tandai Selesai"}
+            <CheckCheck className="size-4" aria-hidden />
+            {isDitolak
+              ? "Pengajuan Ditolak"
+              : isPerluPerbaikan
+                ? "Menunggu Perbaikan"
+                : isSelesai
+                  ? "Selesai"
+                  : "Tandai Selesai"}
           </Button>
         </div>
       </Panel>
