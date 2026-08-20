@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, Upload, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -16,12 +16,12 @@ import {
 } from "@/components/ui/select";
 import { Panel, PageHeader, Breadcrumb } from "@/components/ui-kit";
 import {
-  UNIT_LIST,
   KATEGORI_LIST,
   SATUAN_LIST,
   PRIORITAS_LIST,
   formatRupiah,
 } from "@/data/pengadaan";
+import { apiFetchUnitList } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/pengajuan/buat")({
   head: () => ({
@@ -71,9 +71,14 @@ function BuatPengajuanPage() {
   const [tanggalPengajuan, setTanggalPengajuan] = useState("");
   const [namaPengaju, setNamaPengaju] = useState("");
   const [unitFakultas, setUnitFakultas] = useState("");
+  const [unitList, setUnitList] = useState<string[]>([]);
   const [prioritas, setPrioritas] = useState("Sedang");
   const [tanggalDibutuhkan, setTanggalDibutuhkan] = useState("");
   const [alasan, setAlasan] = useState("");
+
+  useEffect(() => {
+    apiFetchUnitList().then(setUnitList).catch(() => setUnitList([]));
+  }, []);
 
   const ubah = (key: number, patch: Partial<Baris>) =>
     setBaris((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
@@ -191,7 +196,7 @@ function BuatPengajuanPage() {
                   <SelectValue placeholder="Pilih unit atau fakultas" />
                 </SelectTrigger>
                 <SelectContent>
-                  {UNIT_LIST.map((u) => (
+                  {unitList.map((u) => (
                     <SelectItem key={u} value={u}>
                       {u}
                     </SelectItem>

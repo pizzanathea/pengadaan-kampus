@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,13 +15,13 @@ import { EmptyState, PageHeader, Panel } from "@/components/ui-kit";
 import { PrioritasBadge, StatusBadge } from "@/components/status-badge";
 import {
   PRIORITAS_LIST,
-  UNIT_LIST,
   formatRupiah,
   formatTanggal,
   ringkasanBarang,
   totalNilai,
 } from "@/data/pengadaan";
 import { usePengajuanData } from "@/hooks/use-pengajuan";
+import { API_BASE_URL } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/persetujuan/")({
   head: () => ({
@@ -89,6 +88,8 @@ const ROLE_CONFIG: Record<
 
 function PersetujuanPage() {
   const { data: semuaPengajuan, loading, error } = usePengajuanData();
+  const [unitList, setUnitList] = useState<string[]>([]);
+  const [loadingUnit, setLoadingUnit] = useState(true);
 
   const [role, setRole] = useState<Role>("persetujuan_1");
   const config = ROLE_CONFIG[role];
@@ -96,7 +97,26 @@ function PersetujuanPage() {
   const [status, setStatus] = useState(config.defaultStatus);
   const [unit, setUnit] = useState("semua");
   const [prioritas, setPrioritas] = useState("semua");
-  const [tanggal, setTanggal] = useState("");
+
+  useEffect(() => {
+    let aktif = true;
+    fetch(`${API_BASE_URL}/api/unit`)
+      .then((response) => response.json())
+      .then((result) => {
+        if (aktif && result.success && Array.isArray(result.data)) {
+          setUnitList(result.data.filter((item: unknown): item is string => typeof item === "string"));
+        }
+      })
+      .catch(() => {
+        if (aktif) setUnitList([]);
+      })
+      .finally(() => {
+        if (aktif) setLoadingUnit(false);
+      });
+    return () => {
+      aktif = false;
+    };
+  }, []);
 
   const handleRoleChange = (r: Role) => {
     setRole(r);
@@ -109,11 +129,10 @@ function PersetujuanPage() {
         (p) =>
           config.statusScope.includes(p.status) &&
           (status === "semua" ? true : p.status === status) &&
-          (unit === "semua" || p.unit === unit) &&
-          (prioritas === "semua" || p.prioritas === prioritas) &&
-          (!tanggal || p.tanggal === tanggal),
+              (unit === "semua" || p.unit === unit) &&
+              (prioritas === "semua" || p.prioritas === prioritas),
       ),
-    [semuaPengajuan, config, status, unit, prioritas, tanggal],
+            [semuaPengajuan, config, status, unit, prioritas],
   );
 
   return (
@@ -121,7 +140,7 @@ function PersetujuanPage() {
       <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
         <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
         <Select value={role} onValueChange={(v) => handleRoleChange(v as Role)}>
-          <SelectTrigger className="h-8 w-[220px] text-xs">
+          <SelectTrigger className="h-8 w-55 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -134,7 +153,7 @@ function PersetujuanPage() {
       <PageHeader judul={config.judul} subtitle={config.subtitle} />
 
       <Panel>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-1.5">
             <Label>Status</Label>
             <Select value={status} onValueChange={setStatus}>
@@ -158,7 +177,10 @@ function PersetujuanPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua unit</SelectItem>
-                {UNIT_LIST.map((u) => (
+                {loadingUnit ? (
+                  <SelectItem value="memuat" disabled>Memuat unit...</SelectItem>
+                ) : null}
+                {unitList.map((u) => (
                   <SelectItem key={u} value={u}>
                     {u}
                   </SelectItem>
@@ -182,15 +204,6 @@ function PersetujuanPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tgl">Tanggal</Label>
-            <Input
-              id="tgl"
-              type="date"
-              value={tanggal}
-              onChange={(e) => setTanggal(e.target.value)}
-            />
-          </div>
         </div>
       </Panel>
 
@@ -206,7 +219,7 @@ function PersetujuanPage() {
         ) : (
           <>
             <div className="table-scroll hidden lg:block">
-              <table className="w-full min-w-[62rem] text-sm">
+              <table className="w-full min-w-248 text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs tracking-wide text-muted-foreground uppercase">
                     <th className="px-5 py-3 font-medium">Nomor</th>

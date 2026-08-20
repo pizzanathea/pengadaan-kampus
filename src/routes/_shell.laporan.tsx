@@ -32,13 +32,12 @@ import { StatusBadge } from "@/components/status-badge";
 import {
   KATEGORI_LIST,
   LABEL_STATUS,
-  UNIT_LIST,
   formatRupiah,
   formatTanggal,
   ringkasanBarang,
   totalNilai,
 } from "@/data/pengadaan";
-import { apiFetchLaporan, mapBackendPengajuan, type LaporanResponse } from "@/lib/api";
+import { apiFetchLaporan, apiFetchUnitList, mapBackendPengajuan, type LaporanResponse } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/laporan")({
   head: () => ({
@@ -75,6 +74,7 @@ function LaporanPage() {
   const [laporan, setLaporan] = useState<LaporanResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unitList, setUnitList] = useState<string[]>([]);
 
   useEffect(() => {
     let aktif = true;
@@ -95,6 +95,10 @@ function LaporanPage() {
       aktif = false;
     };
   }, [periode, unit, status, kategori]);
+
+  useEffect(() => {
+    apiFetchUnitList().then(setUnitList).catch(() => setUnitList([]));
+  }, []);
 
   const data = useMemo(() => (laporan?.data ?? []).map(mapBackendPengajuan), [laporan]);
 
@@ -274,7 +278,7 @@ function LaporanPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua unit</SelectItem>
-                {UNIT_LIST.map((u) => (
+                {unitList.map((u) => (
                   <SelectItem key={u} value={u}>
                     {u}
                   </SelectItem>

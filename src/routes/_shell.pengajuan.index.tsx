@@ -16,14 +16,13 @@ import {
 import { Panel, PageHeader, EmptyState } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
 import {
-  UNIT_LIST,
   formatRupiah,
   formatTanggal,
   totalNilai,
   totalKuantitas,
   ringkasanBarang,
 } from "@/data/pengadaan";
-import { mapBackendPengajuan, apiUpdatePengajuan } from "@/lib/api";
+import { apiFetchUnitList, mapBackendPengajuan, apiUpdatePengajuan } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/pengajuan/")({
   head: () => ({
@@ -42,6 +41,7 @@ function PengajuanPage() {
   const [listPengajuan, setListPengajuan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mengirimUlang, setMengirimUlang] = useState<string | null>(null);
+  const [unitList, setUnitList] = useState<string[]>([]);
 
   const [cari, setCari] = useState("");
   const [status, setStatus] = useState("semua");
@@ -68,6 +68,10 @@ function PengajuanPage() {
 
   useEffect(() => {
     muatData();
+  }, []);
+
+  useEffect(() => {
+    apiFetchUnitList().then(setUnitList).catch(() => setUnitList([]));
   }, []);
 
   const handleKirimUlang = async (p: any) => {
@@ -173,7 +177,7 @@ function PengajuanPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua unit</SelectItem>
-                {UNIT_LIST.map((u) => (
+                {unitList.map((u) => (
                   <SelectItem key={u} value={u}>
                     {u}
                   </SelectItem>

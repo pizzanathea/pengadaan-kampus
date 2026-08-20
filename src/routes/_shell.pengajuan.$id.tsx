@@ -17,9 +17,9 @@ import {
   InformasiPengajuan,
   RiwayatPengajuan,
 } from "@/components/pengajuan-detail";
-import { KATEGORI_LIST, PRIORITAS_LIST, SATUAN_LIST, UNIT_LIST, formatRupiah } from "@/data/pengadaan";
+import { KATEGORI_LIST, PRIORITAS_LIST, SATUAN_LIST, formatRupiah } from "@/data/pengadaan";
 import { usePengajuanData } from "@/hooks/use-pengajuan";
-import { apiUpdatePengajuan } from "@/lib/api";
+import { apiFetchUnitList, apiUpdatePengajuan } from "@/lib/api";
 
 type BarisEdit = {
   key: number;
@@ -65,6 +65,11 @@ function DetailPengajuanPage() {
   const [tanggalDibutuhkan, setTanggalDibutuhkan] = useState("");
   const [alasan, setAlasan] = useState("");
   const [baris, setBaris] = useState<BarisEdit[]>([]);
+  const [unitList, setUnitList] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiFetchUnitList().then(setUnitList).catch(() => setUnitList([]));
+  }, []);
 
   useEffect(() => {
     if (!p) return;
@@ -190,7 +195,7 @@ function DetailPengajuanPage() {
           <Panel judul="Edit Informasi Pengajuan">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Nama Pengaju</Label><Input value={namaPengaju} onChange={(e) => setNamaPengaju(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Unit / Fakultas</Label><Select value={unitFakultas} onValueChange={setUnitFakultas}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNIT_LIST.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1.5"><Label>Unit / Fakultas</Label><Select value={unitFakultas} onValueChange={setUnitFakultas}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{unitList.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Prioritas</Label><Select value={prioritas} onValueChange={setPrioritas}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRIORITAS_LIST.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Tanggal Dibutuhkan</Label><Input type="date" value={tanggalDibutuhkan} onChange={(e) => setTanggalDibutuhkan(e.target.value)} /></div>
             </div>

@@ -14,10 +14,10 @@ import {
 import { EmptyState, PageHeader, Panel } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
 import {
-  UNIT_LIST,
   formatRupiah,
   formatTanggal,
 } from "@/data/pengadaan";
+import { apiFetchUnitList } from "@/lib/api";
 
 export const Route = createFileRoute("/_shell/pengadaan/")({
   head: () => ({
@@ -39,6 +39,7 @@ function PengadaanPage() {
   const [status, setStatus] = useState("semua");
   const [unit, setUnit] = useState("semua");
   const [pengadaanList, setPengadaanList] = useState<any[]>([]);
+  const [unitList, setUnitList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Ambil data langsung dari endpoint backend pengajuan
@@ -54,6 +55,10 @@ function PengadaanPage() {
         console.error("Gagal memuat data pengadaan:", err);
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    apiFetchUnitList().then(setUnitList).catch(() => setUnitList([]));
   }, []);
 
   // Filter data berdasarkan status approval dan unit fakultas
@@ -101,7 +106,7 @@ function PengadaanPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua unit</SelectItem>
-                {UNIT_LIST.map((u) => (
+                {unitList.map((u) => (
                   <SelectItem key={u} value={u}>
                     {u}
                   </SelectItem>

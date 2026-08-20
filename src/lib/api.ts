@@ -2,6 +2,15 @@ import type { Pengajuan, StatusPengajuan, Prioritas } from "@/data/pengadaan";
 
 export const API_BASE_URL = "http://localhost:5000";
 
+export async function apiFetchUnitList(): Promise<string[]> {
+  const res = await fetch(`${API_BASE_URL}/api/unit`);
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success || !Array.isArray(json.data)) {
+    throw new Error(json?.message || "Gagal mengambil daftar unit.");
+  }
+  return json.data.filter((unit: unknown): unit is string => typeof unit === "string");
+}
+
 export function getLampiranUrl(nama: string) {
   return `${API_BASE_URL}/uploads/${encodeURIComponent(nama)}`;
 }
