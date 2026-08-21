@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageHeader, Panel } from "@/components/ui-kit";
-import { PENGGUNA, ROLE_LIST } from "@/data/pengadaan";
+import { ROLE_LIST } from "@/data/pengadaan";
 
 export const Route = createFileRoute("/_shell/pengaturan")({
   head: () => ({
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/_shell/pengaturan")({
 
 function PengaturanPage() {
   const [tambahTerbuka, setTambahTerbuka] = useState(false);
+  const [editTerbuka, setEditTerbuka] = useState(false);
   
   // State untuk manajemen Unit dari Database
   const [unitList, setUnitList] = useState<string[]>([]);
@@ -49,37 +50,82 @@ function PengaturanPage() {
   const [tambahUnitTerbuka, setTambahUnitTerbuka] = useState(false);
   const [namaUnitBaru, setNamaUnitBaru] = useState("");
 
-  // State untuk Profil Saya
+  // State untuk Profil Saya & Daftar Pengguna
   const [profilData, setProfilData] = useState({ nama: "", email: "" });
   const [passwordData, setPasswordData] = useState({ lama: "", baru: "", konfirmasi: "" });
+  const [daftarPengguna, setDaftarPengguna] = useState<any[]>([]);
 
-  // Ambil data profil user & unit saat halaman dimuat
+  // State untuk form Tambah & Edit Pengguna
+  const [formUserBaru, setFormUserBaru] = useState({
+    nama: "",
+    email: "",
+    password: "",
+    unit: "",
+    role: "Pengaju",
+  });
+
+  const [formUserEdit, setFormUserEdit] = useState({
+    _id: "",
+    nama: "",
+    email: "",
+    unit: "",
+    role: "Pengaju",
+    aktif: true,
+  });
+
+  const fetchDaftarPengguna = () => {
+    const token = localStorage.getItem("token");
+    fetch("http://localhost:5000/api/auth/users", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          setDaftarPengguna(result.data);
+        }
+      })
+      .catch((err) => console.error("Gagal memuat daftar pengguna:", err));
+  };
+
+  // Ambil data profil user, unit, dan daftar pengguna saat halaman dimuat
   useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setProfilData({ nama: parsedUser.nama || "", email: parsedUser.email || "" });
+      } catch (e) {
+        console.error("Gagal parsing user dari localStorage");
+      }
+    }
+
     const token = localStorage.getItem("token");
     const headers = { "Authorization": `Bearer ${token}` };
 
-    // 1. Fetch Profil User yang sedang login
     fetch("http://localhost:5000/api/auth/me", { headers })
       .then((res) => res.json())
       .then((result) => {
         if (result.success && result.data) {
           setProfilData({ nama: result.data.nama, email: result.data.email });
+          localStorage.setItem("user", JSON.stringify(result.data));
         }
       })
       .catch((err) => console.error("Gagal memuat profil:", err));
 
-    // 2. Fetch Daftar Unit dari Database
+    fetchDaftarPengguna();
+
     fetch("http://localhost:5000/api/unit")
       .then((res) => res.json())
       .then((result) => {
         if (result.success && Array.isArray(result.data)) {
           const units = result.data.map((u: any) => (typeof u === "string" ? u : u.nama));
           setUnitList(units);
+          if (units.length > 0) {
+            setFormUserBaru((prev) => ({ ...prev, unit: units[0] }));
+          }
         }
       })
-      .catch((err) => {
-        console.error("Gagal memuat unit:", err);
-      })
+      .catch((err) => console.error("Gagal memuat unit:", err))
       .finally(() => setLoadingUnit(false));
   }, []);
 
@@ -102,6 +148,7 @@ function PengaturanPage() {
 
       if (response.ok && result.success) {
         toast.success("Profil berhasil diperbarui");
+        localStorage.setItem("user", JSON.stringify(result.data));
       } else {
         toast.error(result.message || "Gagal memperbarui profil");
       }
@@ -140,6 +187,106 @@ function PengaturanPage() {
         setPasswordData({ lama: "", baru: "", konfirmasi: "" });
       } else {
         toast.error(result.message || "Gagal mengubah kata sandi");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
+  };
+
+  // Handle Tambah Pengguna Baru ke Database
+  const handleTambahPengguna = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+
+    const payload = {
+      ...formUserBaru,
+      unit: formUserBaru.unit || unitList[0],
+    };
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Pengguna berhasil ditambahkan ke database");
+        setTambahTerbuka(false);
+        setFormUserBaru({ nama: "", email: "", password: "", unit: unitList[0] || "", role: "Pengaju" });
+        fetchDaftarPengguna();
+      } else {
+        toast.error(result.message || "Gagal menambahkan pengguna");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
+  };
+
+  // Handle Edit Pengguna
+  const handleBukaEdit = (user: any) => {
+    setFormUserEdit({
+      _id: user._id,
+      nama: user.nama,
+      email: user.email,
+      unit: user.unit,
+      role: user.role,
+      aktif: user.aktif !== false,
+    });
+    setEditTerbuka(true);
+  };
+
+  const handleSimpanEditPengguna = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/auth/users/${formUserEdit._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(formUserEdit),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Pengguna berhasil diperbarui");
+        setEditTerbuka(false);
+        fetchDaftarPengguna();
+      } else {
+        toast.error(result.message || "Gagal memperbarui pengguna");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
+  };
+
+  // Handle Hapus Pengguna
+  const handleHapusPengguna = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) return;
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/auth/users/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Pengguna berhasil dihapus");
+        fetchDaftarPengguna();
+      } else {
+        toast.error(result.message || "Gagal menghapus pengguna");
       }
     } catch (error) {
       toast.error("Terjadi kesalahan koneksi ke server");
@@ -308,11 +455,12 @@ function PengaturanPage() {
                     <th className="px-5 py-3 font-medium">Unit</th>
                     <th className="px-5 py-3 font-medium">Role</th>
                     <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 text-right font-medium">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {PENGGUNA.map((u) => (
-                    <tr key={u.email} className="border-b border-border last:border-0">
+                  {daftarPengguna.map((u) => (
+                    <tr key={u._id || u.email} className="border-b border-border last:border-0">
                       <td className="px-5 py-3 font-medium">{u.nama}</td>
                       <td className="px-5 py-3 text-muted-foreground">{u.email}</td>
                       <td className="px-5 py-3 text-muted-foreground">{u.unit}</td>
@@ -320,13 +468,31 @@ function PengaturanPage() {
                       <td className="px-5 py-3">
                         <span
                           className={
-                            u.aktif
+                            u.aktif !== false
                               ? "inline-flex rounded-full bg-status-approved-bg px-2.5 py-0.5 text-xs font-medium text-status-approved"
                               : "inline-flex rounded-full bg-status-cancel-bg px-2.5 py-0.5 text-xs font-medium text-status-cancel"
                           }
                         >
-                          {u.aktif ? "Aktif" : "Nonaktif"}
+                          {u.aktif !== false ? "Aktif" : "Nonaktif"}
                         </span>
+                      </td>
+                      <td className="px-5 py-3 text-right space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-blue-600 hover:text-blue-700"
+                          onClick={() => handleBukaEdit(u)}
+                        >
+                          <Edit className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-destructive hover:text-destructive"
+                          onClick={() => handleHapusPengguna(u._id)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -335,8 +501,8 @@ function PengaturanPage() {
             </div>
 
             <ul className="divide-y divide-border md:hidden">
-              {PENGGUNA.map((u) => (
-                <li key={u.email} className="space-y-2 p-4">
+              {daftarPengguna.map((u) => (
+                <li key={u._id || u.email} className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{u.nama}</p>
@@ -344,17 +510,25 @@ function PengaturanPage() {
                     </div>
                     <span
                       className={
-                        u.aktif
+                        u.aktif !== false
                           ? "shrink-0 rounded-full bg-status-approved-bg px-2.5 py-0.5 text-xs font-medium text-status-approved"
                           : "shrink-0 rounded-full bg-status-cancel-bg px-2.5 py-0.5 text-xs font-medium text-status-cancel"
                       }
                     >
-                      {u.aktif ? "Aktif" : "Nonaktif"}
+                      {u.aktif !== false ? "Aktif" : "Nonaktif"}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {u.unit} · {u.role}
                   </p>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" size="sm" onClick={() => handleBukaEdit(u)}>
+                      Edit
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleHapusPengguna(u._id)}>
+                      Hapus
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -438,29 +612,45 @@ function PengaturanPage() {
           <form
             id="formPengguna"
             className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setTambahTerbuka(false);
-              toast.success("Pengguna berhasil ditambahkan");
-            }}
+            onSubmit={handleTambahPengguna}
           >
             <div className="space-y-1.5">
               <Label htmlFor="namaBaru">Nama</Label>
-              <Input id="namaBaru" required />
+              <Input
+                id="namaBaru"
+                value={formUserBaru.nama}
+                onChange={(e) => setFormUserBaru({ ...formUserBaru, nama: e.target.value })}
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="emailBaru">Email</Label>
-              <Input id="emailBaru" type="email" required />
+              <Input
+                id="emailBaru"
+                type="email"
+                value={formUserBaru.email}
+                onChange={(e) => setFormUserBaru({ ...formUserBaru, email: e.target.value })}
+                required
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="passwordBaru">Kata Sandi</Label>
-              <Input id="passwordBaru" type="password" required />
+              <Input
+                id="passwordBaru"
+                type="password"
+                value={formUserBaru.password}
+                onChange={(e) => setFormUserBaru({ ...formUserBaru, password: e.target.value })}
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Unit</Label>
-              <Select defaultValue={unitList[0] || ""}>
+              <Select
+                value={formUserBaru.unit || unitList[0] || ""}
+                onValueChange={(val) => setFormUserBaru({ ...formUserBaru, unit: val })}
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue placeholder="Pilih Unit" />
                 </SelectTrigger>
                 <SelectContent>
                   {unitList.map((u) => (
@@ -473,9 +663,12 @@ function PengaturanPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Role</Label>
-              <Select defaultValue="Pengaju">
+              <Select
+                value={formUserBaru.role}
+                onValueChange={(val) => setFormUserBaru({ ...formUserBaru, role: val })}
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue placeholder="Pilih Role" />
                 </SelectTrigger>
                 <SelectContent>
                   {ROLE_LIST.map((r) => (
@@ -497,6 +690,103 @@ function PengaturanPage() {
             </Button>
             <Button type="submit" form="formPengguna" className="w-full sm:w-auto">
               Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Edit Pengguna */}
+      <Dialog open={editTerbuka} onOpenChange={setEditTerbuka}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg sm:w-full">
+          <DialogHeader>
+            <DialogTitle>Edit Pengguna</DialogTitle>
+          </DialogHeader>
+          <form
+            id="formEditPengguna"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+            onSubmit={handleSimpanEditPengguna}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="namaEdit">Nama</Label>
+              <Input
+                id="namaEdit"
+                value={formUserEdit.nama}
+                onChange={(e) => setFormUserEdit({ ...formUserEdit, nama: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="emailEdit">Email</Label>
+              <Input
+                id="emailEdit"
+                type="email"
+                value={formUserEdit.email}
+                onChange={(e) => setFormUserEdit({ ...formUserEdit, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Unit</Label>
+              <Select
+                value={formUserEdit.unit || unitList[0] || ""}
+                onValueChange={(val) => setFormUserEdit({ ...formUserEdit, unit: val })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih Unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {unitList.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Select
+                value={formUserEdit.role}
+                onValueChange={(val) => setFormUserEdit({ ...formUserEdit, role: val })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_LIST.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Status Akun</Label>
+              <Select
+                value={formUserEdit.aktif ? "aktif" : "nonaktif"}
+                onValueChange={(val) => setFormUserEdit({ ...formUserEdit, aktif: val === "aktif" })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="nonaktif">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </form>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setEditTerbuka(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" form="formEditPengguna" className="w-full sm:w-auto">
+              Simpan Perubahan
             </Button>
           </DialogFooter>
         </DialogContent>

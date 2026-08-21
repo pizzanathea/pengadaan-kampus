@@ -7,7 +7,10 @@ const {
   resetPassword, 
   getMe, 
   updateProfile, 
-  updatePassword 
+  updatePassword,
+  getAllUsers,
+  updateUser,
+  deleteUser
 } = require("../controllers/auth.controller");
 const { protect } = require("../middleware/auth.middleware");
 
@@ -16,9 +19,12 @@ router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
-// Rute Terproteksi untuk Profil Pengguna
+// Rute Terproteksi untuk Profil Pengguna & Daftar Pengguna
 router.get("/me", protect, getMe);
 router.put("/profile", protect, updateProfile);
 router.put("/password", protect, updatePassword);
+router.get("/users", protect, getAllUsers);
+router.put("/users/:id", protect, updateUser);
+router.delete("/users/:id", protect, deleteUser);
 
 module.exports = router;

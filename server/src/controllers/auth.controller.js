@@ -215,3 +215,35 @@ exports.updatePassword = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Ambil semua daftar pengguna untuk manajemen role
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 1. Update Pengguna (Oleh Admin)
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nama, email, unit, role, aktif } = req.body;
+    const user = await User.findByIdAndUpdate(id, { nama, email, unit, role, aktif }, { new: true });
+    res.status(200).json({ success: true, message: "Pengguna berhasil diupdate", data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 2. Hapus Pengguna
+exports.deleteUser = async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, message: "Pengguna berhasil dihapus" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
