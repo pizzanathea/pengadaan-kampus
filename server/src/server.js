@@ -28,6 +28,9 @@ app.get("/api/pengajuan/lampiran/download/:filename", (req, res) => {
 });
 
 // --- PASANG RUTE DI SINI (Setelah 'app' dideklarasikan) ---
+const authRoutes = require("./routes/auth.routes");
+app.use("/api/auth", authRoutes); // <-- Pendaftaran Rute Register / Auth
+
 const pengajuanRoutes = require("./routes/pengajuan.routes");
 app.use("/api/pengajuan", pengajuanRoutes);
 

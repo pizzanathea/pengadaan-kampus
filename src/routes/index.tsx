@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { GraduationCap, ShieldCheck, FileCheck2, BarChart3 } from "lucide-react";
+import { GraduationCap, ShieldCheck, FileCheck2, BarChart3, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,10 +32,100 @@ type Mode = "login" | "register";
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("login");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // State untuk daftar unit pilihan (diambil dari database)
+  const [unitList, setUnitList] = useState<string[]>([]);
+
+  // State Form Register
+  const [registerData, setRegisterData] = useState({
+    nama: "",
+    email: "",
+    password: "",
+    konfirmasiPassword: "",
+    unit: "",
+  });
+
+  // Ambil daftar unit dari database secara real-time saat komponen dimuat
+  // Ambil daftar unit dari database secara real-time saat komponen dimuat
+  useEffect(() => {
+    fetch("http://localhost:5000/api/unit")
+      .then((res) => res.json())
+      .then((result) => {
+        // Cek format data, tangani jika berupa array objek atau array string
+        let rawData = [];
+        if (result.success && Array.isArray(result.data)) {
+          rawData = result.data;
+        } else if (Array.isArray(result)) {
+          rawData = result;
+        }
+
+        if (rawData.length > 0) {
+          // Konversi menjadi array string jika isinya berupa objek (misal: { nama: "..." } atau { unit: "..." })
+          const formattedUnits = rawData.map((item: any) => 
+            typeof item === "string" ? item : (item.nama || item.unit || item.title || JSON.stringify(item))
+          );
+
+          setUnitList(formattedUnits);
+          setRegisterData((prev) => ({ ...prev, unit: formattedUnits[0] }));
+        }
+      })
+      .catch((err) => console.error("Gagal memuat unit:", err));
+  }, []);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (registerData.password !== registerData.konfirmasiPassword) {
+      setErrorMessage("Konfirmasi kata sandi tidak cocok!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: registerData.nama,
+          email: registerData.email,
+          password: registerData.password,
+          unit: registerData.unit,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Berhasil daftar: beri pesan sukses, lalu pindahkan mode ke "login"
+        setSuccessMessage("Registrasi berhasil! Silakan masuk dengan akun Anda.");
+        
+        // Reset form
+        setRegisterData({ nama: "", email: "", password: "", konfirmasiPassword: "", unit: registerData.unit });
+        
+        // Pindah ke mode login setelah 1.5 detik
+        setTimeout(() => {
+          setMode("login");
+          setSuccessMessage("");
+        }, 1500);
+      } else {
+        setErrorMessage(result.message || "Terjadi kesalahan saat registrasi.");
+      }
+    } catch (err) {
+      setErrorMessage("Gagal terhubung ke server backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen w-full">
-      {/* Branding — fixed di viewport, posisi konten gak pernah ikut geser walau tinggi form berubah */}
+      {/* Branding — fixed di viewport */}
       <section
         className="relative flex flex-col justify-between overflow-hidden bg-sidebar px-6 py-10 text-sidebar-foreground sm:px-10 lg:px-14 lg:py-14 lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen lg:w-1/2"
         style={{
@@ -46,7 +136,6 @@ function AuthPage() {
           backgroundAttachment: "fixed",
         }}
       >
-        {/* Overlay gelap supaya teks tetap kebaca di atas gambar */}
         <div className="absolute inset-0 bg-sidebar/80" aria-hidden />
 
         <div className="relative z-10 flex items-center gap-3">
@@ -60,7 +149,6 @@ function AuthPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-sidebar-primary sm:text-3xl lg:text-4xl">
             Sistem Pengadaan Barang
           </h1>
-         
 
           <ul className="mt-8 space-y-4">
             {[
@@ -83,9 +171,20 @@ function AuthPage() {
         </p>
       </section>
 
-      {/* Form — bagian ini yang ganti-ganti sesuai mode, page tetap sama */}
+      {/* Form Section */}
       <section className="flex items-center justify-center px-4 py-10 sm:px-8 lg:ml-[50%] lg:min-h-screen">
         <div className="w-full max-w-md">
+          {errorMessage && (
+            <div className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {errorMessage}
+            </div>
+          )}
+          {successMessage && (
+            <div className="mb-4 rounded-md bg-emerald-500/15 p-3 text-sm text-emerald-600">
+              {successMessage}
+            </div>
+          )}
+
           {mode === "login" ? (
             <>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Masuk</h2>
@@ -165,19 +264,14 @@ function AuthPage() {
                 Buat akun kampus untuk mulai mengajukan pengadaan barang.
               </p>
 
-              <form
-                className="mt-8 space-y-5"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  navigate({ to: "/dashboard" });
-                }}
-              >
+              <form className="mt-8 space-y-4" onSubmit={handleRegister}>
                 <div className="space-y-2">
                   <Label htmlFor="nama">Nama Lengkap</Label>
                   <Input
                     id="nama"
                     type="text"
-                    autoComplete="name"
+                    value={registerData.nama}
+                    onChange={(e) => setRegisterData({ ...registerData, nama: e.target.value })}
                     placeholder="Budi Santoso"
                     required
                     className="h-11"
@@ -189,12 +283,30 @@ function AuthPage() {
                   <Input
                     id="email-daftar"
                     type="email"
-                    inputMode="email"
-                    autoComplete="email"
+                    value={registerData.email}
+                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                     placeholder="nama@kampus.ac.id"
                     required
                     className="h-11"
                   />
+                </div>
+
+                {/* --- PILIHAN UNIT / FAKULTAS (Dinamis dari Database) --- */}
+                <div className="space-y-2">
+                  <Label htmlFor="unit-daftar">Unit / Fakultas</Label>
+                  <select
+                    id="unit-daftar"
+                    value={registerData.unit}
+                    onChange={(e) => setRegisterData({ ...registerData, unit: e.target.value })}
+                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  >
+                    {unitList.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-2">
@@ -202,7 +314,8 @@ function AuthPage() {
                   <Input
                     id="sandi-daftar"
                     type="password"
-                    autoComplete="new-password"
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                     placeholder="••••••••"
                     required
                     className="h-11"
@@ -214,22 +327,25 @@ function AuthPage() {
                   <Input
                     id="konfirmasi-sandi"
                     type="password"
-                    autoComplete="new-password"
+                    value={registerData.konfirmasiPassword}
+                    onChange={(e) =>
+                      setRegisterData({ ...registerData, konfirmasiPassword: e.target.value })
+                    }
                     placeholder="••••••••"
                     required
                     className="h-11"
                   />
                 </div>
 
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 pt-2">
                   <Checkbox id="setuju" required className="mt-0.5" />
                   <Label htmlFor="setuju" className="text-sm font-normal leading-snug">
                     Saya menyetujui ketentuan penggunaan dan kebijakan privasi sistem ini.
                   </Label>
                 </div>
 
-                <Button type="submit" className="h-11 w-full">
-                  Daftar
+                <Button type="submit" className="h-11 w-full" disabled={loading}>
+                  {loading ? <Loader2 className="size-4 animate-spin" /> : "Daftar"}
                 </Button>
               </form>
 
