@@ -35,6 +35,7 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
 
   // State untuk daftar unit pilihan (diambil dari database)
   const [unitList, setUnitList] = useState<string[]>([]);
@@ -123,6 +124,35 @@ function AuthPage() {
     }
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setErrorMessage(result.message || "Email atau kata sandi salah.");
+        return;
+      }
+
+      localStorage.setItem("auth_token", result.token);
+      localStorage.setItem("auth_user", JSON.stringify(result.data));
+      navigate({ to: "/dashboard" });
+    } catch {
+      setErrorMessage("Gagal terhubung ke server backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full">
       {/* Branding — fixed di viewport */}
@@ -194,10 +224,7 @@ function AuthPage() {
 
               <form
                 className="mt-8 space-y-5"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  navigate({ to: "/dashboard" });
-                }}
+                onSubmit={handleLogin}
               >
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -207,7 +234,8 @@ function AuthPage() {
                     inputMode="email"
                     autoComplete="email"
                     placeholder="nama@kampus.ac.id"
-                    defaultValue="budi.santoso@kampus.ac.id"
+                    value={loginData.email}
+                    onChange={(e) => setLoginData((prev) => ({ ...prev, email: e.target.value }))}
                     required
                     className="h-11"
                   />
@@ -220,7 +248,8 @@ function AuthPage() {
                     type="password"
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    defaultValue="password"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData((prev) => ({ ...prev, password: e.target.value }))}
                     required
                     className="h-11"
                   />
@@ -241,8 +270,8 @@ function AuthPage() {
                   </button>
                 </div>
 
-                <Button type="submit" className="h-11 w-full">
-                  Masuk
+                <Button type="submit" className="h-11 w-full" disabled={loading}>
+                  {loading ? <><Loader2 className="size-4 animate-spin" aria-hidden /> Memproses...</> : "Masuk"}
                 </Button>
               </form>
 

@@ -46,3 +46,47 @@ exports.register = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email dan kata sandi wajib diisi",
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        success: false,
+        message: "Email atau kata sandi salah",
+      });
+    }
+
+    if (!user.aktif) {
+      return res.status(403).json({
+        success: false,
+        message: "Akun Anda tidak aktif",
+      });
+    }
+
+    const token = generateToken(user);
+    res.status(200).json({
+      success: true,
+      message: "Login berhasil",
+      token,
+      data: {
+        id: user._id,
+        nama: user.nama,
+        email: user.email,
+        unit: user.unit,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
