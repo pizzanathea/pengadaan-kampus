@@ -1,5 +1,6 @@
 const multer = require("multer");
 const { Pengajuan } = require("../models/pengadaan.model");
+const Notification = require("../models/notification.model");
 
 // Konfigurasi Multer
 const storage = multer.diskStorage({
@@ -155,6 +156,69 @@ exports.updatePengajuan = async (req, res) => {
 
     const updated = await Pengajuan.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
+    // Buat notifikasi jika status approval berubah
+    if (updated && existingData.statusApproval !== updated.statusApproval) {
+      const statusLama = existingData.statusApproval;
+      const statusBaru = updated.statusApproval;
+
+      if (statusBaru === "menunggu_2") {
+        // Diteruskan ke Persetujuan Keuangan (Approver)
+        await Notification.create({
+          role: "Approver",
+          teks: `Pengajuan Keuangan ${updated.nomorPengajuan} membutuhkan persetujuan Anda.`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+
+        // Info ke Pengaju
+        await Notification.create({
+          namaPengaju: updated.namaPengaju,
+          teks: `Pengajuan ${updated.nomorPengajuan} disetujui Tahap 1, menunggu Persetujuan Keuangan.`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+      } else if (statusBaru === "disetujui") {
+        // Disetujui final
+        await Notification.create({
+          namaPengaju: updated.namaPengaju,
+          teks: `Pengajuan ${updated.nomorPengajuan} telah disetujui.`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+
+        await Notification.create({
+          role: "Admin Pengadaan",
+          teks: `Pengajuan ${updated.nomorPengajuan} siap diproses pengadaan.`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+      } else if (statusBaru === "ditolak") {
+        // Ditolak
+        await Notification.create({
+          namaPengaju: updated.namaPengaju,
+          teks: `Pengajuan ${updated.nomorPengajuan} ditolak oleh Kepala Unit: ${updated.alasanPenolakan || "-"}`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+      } else if (statusBaru === "perlu_perbaikan") {
+        // Perlu perbaikan
+        await Notification.create({
+          namaPengaju: updated.namaPengaju,
+          teks: `Pengajuan ${updated.nomorPengajuan} memerlukan perbaikan: ${updated.catatanPerbaikan || "-"}`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+      } else if (statusBaru === "diproses") {
+        // Diproses pengadaan
+        await Notification.create({
+          namaPengaju: updated.namaPengaju,
+          teks: `Pengadaan ${updated.nomorPengajuan} sedang diproses.`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+      } else if (statusBaru === "selesai") {
+        // Selesai pengadaan
+        await Notification.create({
+          namaPengaju: updated.namaPengaju,
+          teks: `Pengadaan ${updated.nomorPengajuan} telah selesai.`,
+          waktu: "Baru saja",
+        }).catch(e => console.error(e));
+      }
+    }
+
     res.status(200).json({ success: true, message: "Berhasil diperbarui", data: updated });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -193,6 +257,14 @@ exports.createPengajuan = async (req, res) => {
     });
 
     const savedData = await newPengajuan.save();
+
+    // Buat notifikasi awal untuk Approver
+    await Notification.create({
+      role: "Approver",
+      teks: `Pengajuan ${savedData.nomorPengajuan} oleh ${savedData.namaPengaju} membutuhkan persetujuan Anda.`,
+      waktu: "Baru saja",
+    }).catch(e => console.error(e));
+
     res.status(201).json({ success: true, message: "Pengajuan berhasil dibuat", data: savedData });
   } catch (error) {
     console.error("Error Detail:", error.message);

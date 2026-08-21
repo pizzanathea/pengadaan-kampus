@@ -127,3 +127,38 @@ export async function apiFetchLaporan(params: {
   }
   return json as LaporanResponse;
 }
+
+export type NotificationItem = {
+  _id: string;
+  namaPengaju: string;
+  role: string;
+  teks: string;
+  dibaca: boolean;
+  waktu: string;
+  createdAt: string;
+};
+
+export async function apiFetchNotifications(role: string, user: string): Promise<NotificationItem[]> {
+  const query = new URLSearchParams({ role, user });
+  const res = await fetch(`${API_BASE_URL}/api/notifications?${query}`);
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) {
+    throw new Error(json?.message || "Gagal mengambil data notifikasi.");
+  }
+  return json.data as NotificationItem[];
+}
+
+export async function apiMarkNotificationAsRead(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+    method: "PUT",
+  });
+  if (!res.ok) throw new Error("Gagal menandai notifikasi dibaca.");
+}
+
+export async function apiMarkAllNotificationsAsRead(role: string, user: string): Promise<void> {
+  const query = new URLSearchParams({ role, user });
+  const res = await fetch(`${API_BASE_URL}/api/notifications/read-all?${query}`, {
+    method: "PUT",
+  });
+  if (!res.ok) throw new Error("Gagal menandai semua notifikasi.");
+}

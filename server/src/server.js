@@ -37,6 +37,9 @@ app.use("/api/pengajuan", pengajuanRoutes);
 const pengaturanRoutes = require('./routes/pengaturan.routes');
 app.use('/api/unit', pengaturanRoutes);
 
+const notificationRoutes = require("./routes/notification.routes");
+app.use("/api/notifications", notificationRoutes);
+
 // Sambungkan ke MongoDB & Jalankan Server
 mongoose
   .connect(process.env.MONGO_URI)

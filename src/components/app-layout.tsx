@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   FileText,
@@ -26,7 +26,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NOTIFIKASI } from "@/data/pengadaan";
+import {
+  apiFetchNotifications,
+  apiMarkNotificationAsRead,
+  apiMarkAllNotificationsAsRead,
+  type NotificationItem,
+} from "@/lib/api";
 
 const MENU = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
@@ -108,8 +113,25 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function NotifikasiMenu() {
-  const [notif, setNotif] = useState(NOTIFIKASI);
+function NotifikasiMenu({ user, role }: { user: string; role: string }) {
+  const [notif, setNotif] = useState<NotificationItem[]>([]);
+
+  const fetchNotif = useCallback(async () => {
+    if (!user || !role) return;
+    try {
+      const data = await apiFetchNotifications(role, user);
+      setNotif(data);
+    } catch (e) {
+      console.error("Gagal mengambil notifikasi:", e);
+    }
+  }, [user, role]);
+
+  useEffect(() => {
+    fetchNotif();
+    const interval = setInterval(fetchNotif, 10000);
+    return () => clearInterval(interval);
+  }, [fetchNotif]);
+
   const belumDibaca = notif.filter((n) => !n.dibaca).length;
 
   return (
@@ -142,36 +164,127 @@ function NotifikasiMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="max-h-72 overflow-y-auto">
-          {notif.map((n) => (
-            <DropdownMenuItem
-              key={n.id}
-              className="flex flex-col items-start gap-1 py-2.5 whitespace-normal"
-            >
-              <span className={cn("text-sm", !n.dibaca && "font-medium")}>{n.teks}</span>
-              <span className="text-xs text-muted-foreground">{n.waktu}</span>
-            </DropdownMenuItem>
-          ))}
+          {notif.length === 0 ? (
+            <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+              Tidak ada notifikasi baru.
+            </div>
+          ) : (
+            notif.map((n) => (
+              <DropdownMenuItem
+                key={n._id}
+                onClick={async () => {
+                  try {
+                    await apiMarkNotificationAsRead(n._id);
+                    setNotif((prev) =>
+                      prev.map((item) => (item._id === n._id ? { ...item, dibaca: true } : item))
+                    );
+                  } catch (e) {
+                    console.error("Gagal menandai notifikasi dibaca:", e);
+                  }
+                }}
+                className="flex flex-col items-start gap-1 py-2.5 whitespace-normal cursor-pointer"
+              >
+                <span className={cn("text-sm", !n.dibaca && "font-medium")}>{n.teks}</span>
+                <span className="text-xs text-muted-foreground">
+                  {n.waktu || new Date(n.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </DropdownMenuItem>
+            ))
+          )}
         </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-            setNotif((prev) => prev.map((n) => ({ ...n, dibaca: true })));
-          }}
-          className="justify-center text-sm font-medium"
-        >
-          Tandai semua sudah dibaca
-        </DropdownMenuItem>
+        {notif.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={async (e) => {
+                e.preventDefault();
+                try {
+                  await apiMarkAllNotificationsAsRead(role, user);
+                  setNotif((prev) => prev.map((n) => ({ ...n, dibaca: true })));
+                } catch (e) {
+                  console.error("Gagal menandai semua dibaca:", e);
+                }
+              }}
+              className="justify-center text-sm font-medium cursor-pointer"
+            >
+              Tandai semua sudah dibaca
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
+// Ganti bagian deklarasi state user di dalam AppLayout menjadi seperti ini:
 export function AppLayout({ children }: { children?: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
   const [cariMobile, setCariMobile] = useState(false);
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  
+
+  // PERBAIKAN: Gunakan fungsi callback pada useState untuk membaca localStorage secara sinkron saat inisialisasi
+  const [user, setUser] = useState(() => {
+    const savedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    try {
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return {
+          nama: parsed.nama || "Pengguna",
+          email: parsed.email || "",
+          role: parsed.role || "Pengaju",
+        };
+      }
+    } catch (e) {
+      console.error("Gagal parsing user saat inisialisasi");
+    }
+    // Jika tidak ada di localStorage, baru gunakan default
+    return {
+      nama: "",
+      email: "",
+      role: "",
+    };
+  });
+
+  // useEffect tetap ada untuk menyinkronkan data dengan database (jika ada update di profil)
+  useEffect(() => {
+    const syncUser = () => {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.error("Gagal sync user");
+        }
+      }
+    };
+
+    // Panggil sekali saat mount
+    syncUser();
+
+    // Optional: Bisa ditambahkan event listener jika butuh update realtime antar tab
+    window.addEventListener("storage", syncUser);
+    return () => window.removeEventListener("storage", syncUser);
+  }, []);
+
+  // ... sisanya kode tetap sama
+
+  // Fungsi untuk mendapatkan inisial nama (contoh: "Budi Santoso" -> "BS")
+  const getInisial = (nama: string) => {
+    return nama
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate({ to: "/" });
+  };
+
   const allMenuItems = [...MENU, { label: "Pengaturan", to: "/pengaturan", icon: Settings }];
   const judul =
     allMenuItems.find((m) => pathname === m.to || pathname.startsWith(m.to + "/"))?.label ?? "Dashboard";
@@ -237,31 +350,31 @@ export function AppLayout({ children }: { children?: ReactNode }) {
                 {cariMobile ? <X className="size-5" /> : <Search className="size-5" />}
               </Button>
 
-              <NotifikasiMenu />
+              <NotifikasiMenu user={user.nama} role={user.role} />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-10 gap-2 px-2">
                     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-soft text-[11px] font-semibold text-secondary-foreground">
-                      BS
+                      {getInisial(user.nama)}
                     </span>
                     <span className="hidden max-w-28 truncate text-sm font-medium sm:block">
-                      Budi Santoso
+                      {user.nama}
                     </span>
                     <ChevronDown className="hidden size-4 text-muted-foreground sm:block" aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
-                    <p className="text-sm font-medium">Budi Santoso</p>
-                    <p className="text-xs font-normal text-muted-foreground">Administrator</p>
+                    <p className="text-sm font-medium">{user.nama}</p>
+                    <p className="text-xs font-normal text-muted-foreground">{user.role}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/pengaturan">Pengaturan</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/">Keluar</Link>
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                    Keluar
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
