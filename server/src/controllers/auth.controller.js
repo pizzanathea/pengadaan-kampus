@@ -146,3 +146,72 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// 1. Ambil Profil User yang Sedang Login
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Pengguna tidak ditemukan" });
+    }
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 2. Update Profil Saya (Nama & Email)
+exports.updateProfile = async (req, res) => {
+  try {
+    const { nama, email } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Pengguna tidak ditemukan" });
+    }
+
+    user.nama = nama || user.nama;
+    user.email = email || user.email;
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profil berhasil diperbarui",
+      data: {
+        id: updatedUser._id,
+        nama: updatedUser.nama,
+        email: updatedUser.email,
+        unit: updatedUser.unit,
+        role: updatedUser.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 3. Ubah Kata Sandi dari Halaman Pengaturan
+exports.updatePassword = async (req, res) => {
+  try {
+    const { passwordLama, passwordBaru } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Pengguna tidak ditemukan" });
+    }
+
+    const isMatch = await bcrypt.compare(passwordLama, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Kata sandi lama salah" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(passwordBaru, salt);
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Kata sandi berhasil diubah" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

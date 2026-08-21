@@ -147,8 +147,9 @@ function AuthPage() {
         return;
       }
 
-      localStorage.setItem("auth_token", result.token);
-      localStorage.setItem("auth_user", JSON.stringify(result.data));
+      // Gunakan "token" dan "user" agar langsung sinkron dengan halaman pengaturan
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("user", JSON.stringify(result.data));
       navigate({ to: "/dashboard" });
     } catch {
       setErrorMessage("Gagal terhubung ke server backend.");

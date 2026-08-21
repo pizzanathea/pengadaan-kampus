@@ -49,8 +49,26 @@ function PengaturanPage() {
   const [tambahUnitTerbuka, setTambahUnitTerbuka] = useState(false);
   const [namaUnitBaru, setNamaUnitBaru] = useState("");
 
-  // Ambil data unit dari backend saat halaman dimuat
+  // State untuk Profil Saya
+  const [profilData, setProfilData] = useState({ nama: "", email: "" });
+  const [passwordData, setPasswordData] = useState({ lama: "", baru: "", konfirmasi: "" });
+
+  // Ambil data profil user & unit saat halaman dimuat
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const headers = { "Authorization": `Bearer ${token}` };
+
+    // 1. Fetch Profil User yang sedang login
+    fetch("http://localhost:5000/api/auth/me", { headers })
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success && result.data) {
+          setProfilData({ nama: result.data.nama, email: result.data.email });
+        }
+      })
+      .catch((err) => console.error("Gagal memuat profil:", err));
+
+    // 2. Fetch Daftar Unit dari Database
     fetch("http://localhost:5000/api/unit")
       .then((res) => res.json())
       .then((result) => {
@@ -64,6 +82,69 @@ function PengaturanPage() {
       })
       .finally(() => setLoadingUnit(false));
   }, []);
+
+  // Handle Update Profil (Nama & Email)
+  const handleUpdateProfil = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(profilData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Profil berhasil diperbarui");
+      } else {
+        toast.error(result.message || "Gagal memperbarui profil");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
+  };
+
+  // Handle Ubah Kata Sandi
+  const handleUbahPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.baru !== passwordData.konfirmasi) {
+      toast.error("Konfirmasi kata sandi baru tidak cocok!");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          passwordLama: passwordData.lama,
+          passwordBaru: passwordData.baru,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Kata sandi berhasil diubah");
+        setPasswordData({ lama: "", baru: "", konfirmasi: "" });
+      } else {
+        toast.error(result.message || "Gagal mengubah kata sandi");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan koneksi ke server");
+    }
+  };
 
   const handleTambahUnit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,25 +215,25 @@ function PengaturanPage() {
 
         <TabsContent value="saya" className="mt-4 space-y-4 sm:space-y-6">
           <Panel judul="Profil Saya">
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                toast.success("Profil berhasil diperbarui");
-              }}
-            >
-              
+            <form className="space-y-4" onSubmit={handleUpdateProfil}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="namaSaya">Nama</Label>
-                  <Input id="namaSaya" defaultValue="Budi Santoso" />
+                  <Input
+                    id="namaSaya"
+                    value={profilData.nama}
+                    onChange={(e) => setProfilData({ ...profilData, nama: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="emailSaya">Email</Label>
                   <Input
                     id="emailSaya"
                     type="email"
-                    defaultValue="budi.santoso@kampus.ac.id"
+                    value={profilData.email}
+                    onChange={(e) => setProfilData({ ...profilData, email: e.target.value })}
+                    required
                   />
                 </div>
               </div>
@@ -165,25 +246,37 @@ function PengaturanPage() {
           </Panel>
 
           <Panel judul="Ubah Kata Sandi">
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                toast.success("Kata sandi berhasil diubah");
-              }}
-            >
+            <form className="space-y-4" onSubmit={handleUbahPassword}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="lama">Kata Sandi Lama</Label>
-                  <Input id="lama" type="password" />
+                  <Input
+                    id="lama"
+                    type="password"
+                    value={passwordData.lama}
+                    onChange={(e) => setPasswordData({ ...passwordData, lama: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="baru">Kata Sandi Baru</Label>
-                  <Input id="baru" type="password" />
+                  <Input
+                    id="baru"
+                    type="password"
+                    value={passwordData.baru}
+                    onChange={(e) => setPasswordData({ ...passwordData, baru: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="konfirmasi">Konfirmasi Kata Sandi</Label>
-                  <Input id="konfirmasi" type="password" />
+                  <Input
+                    id="konfirmasi"
+                    type="password"
+                    value={passwordData.konfirmasi}
+                    onChange={(e) => setPasswordData({ ...passwordData, konfirmasi: e.target.value })}
+                    required
+                  />
                 </div>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
