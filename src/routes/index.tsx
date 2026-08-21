@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
   component: AuthPage,
 });
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot" | "reset";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -36,6 +36,10 @@ function AuthPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirmation, setResetConfirmation] = useState("");
 
   // State untuk daftar unit pilihan (diambil dari database)
   const [unitList, setUnitList] = useState<string[]>([]);
@@ -146,6 +150,66 @@ function AuthPage() {
       localStorage.setItem("auth_token", result.token);
       localStorage.setItem("auth_user", JSON.stringify(result.data));
       navigate({ to: "/dashboard" });
+    } catch {
+      setErrorMessage("Gagal terhubung ke server backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        setErrorMessage(result.message || "Gagal membuat permintaan reset.");
+        return;
+      }
+      if (result.resetToken) {
+        setResetToken(result.resetToken);
+        setSuccessMessage("Token reset development dibuat. Masukkan token tersebut di form berikut.");
+        setMode("reset");
+      } else {
+        setSuccessMessage(result.message);
+      }
+    } catch {
+      setErrorMessage("Gagal terhubung ke server backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+    if (resetPassword !== resetConfirmation) {
+      setErrorMessage("Konfirmasi kata sandi tidak cocok.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resetToken, password: resetPassword }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        setErrorMessage(result.message || "Gagal mengubah kata sandi.");
+        return;
+      }
+      setSuccessMessage("Kata sandi berhasil diubah. Silakan masuk.");
+      setLoginData({ email: forgotEmail, password: "" });
+      setMode("login");
     } catch {
       setErrorMessage("Gagal terhubung ke server backend.");
     } finally {
@@ -264,6 +328,11 @@ function AuthPage() {
                   </div>
                   <button
                     type="button"
+                    onClick={() => {
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                      setMode("forgot");
+                    }}
                     className="text-sm font-medium text-secondary-foreground underline-offset-4 hover:underline"
                   >
                     Lupa kata sandi?
@@ -285,6 +354,31 @@ function AuthPage() {
                   Daftar akun baru
                 </button>
               </p>
+            </>
+          ) : mode === "forgot" ? (
+            <>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Lupa Kata Sandi</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Masukkan email akun untuk membuat token reset.</p>
+              <form className="mt-8 space-y-5" onSubmit={handleForgotPassword}>
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Email</Label>
+                  <Input id="forgot-email" type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required />
+                </div>
+                <Button type="submit" className="h-11 w-full" disabled={loading}>{loading ? "Memproses..." : "Buat Token Reset"}</Button>
+              </form>
+              <button type="button" onClick={() => setMode("login")} className="mt-6 text-sm font-medium text-secondary-foreground hover:underline">Kembali ke login</button>
+            </>
+          ) : mode === "reset" ? (
+            <>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Buat Kata Sandi Baru</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Token reset berlaku selama 15 menit.</p>
+              <form className="mt-8 space-y-5" onSubmit={handleResetPassword}>
+                <div className="space-y-2"><Label htmlFor="reset-token">Token Reset</Label><Input id="reset-token" value={resetToken} onChange={(e) => setResetToken(e.target.value)} required /></div>
+                <div className="space-y-2"><Label htmlFor="reset-password">Kata Sandi Baru</Label><Input id="reset-password" type="password" minLength={8} value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} required /></div>
+                <div className="space-y-2"><Label htmlFor="reset-confirmation">Konfirmasi Kata Sandi</Label><Input id="reset-confirmation" type="password" minLength={8} value={resetConfirmation} onChange={(e) => setResetConfirmation(e.target.value)} required /></div>
+                <Button type="submit" className="h-11 w-full" disabled={loading}>{loading ? "Memproses..." : "Simpan Kata Sandi Baru"}</Button>
+              </form>
+              <button type="button" onClick={() => setMode("login")} className="mt-6 text-sm font-medium text-secondary-foreground hover:underline">Kembali ke login</button>
             </>
           ) : (
             <>

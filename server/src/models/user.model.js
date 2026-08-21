@@ -12,6 +12,8 @@ const userSchema = new mongoose.Schema(
       default: "Pengaju" 
     },
     aktif: { type: Boolean, default: true },
+    resetPasswordTokenHash: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
   },
   { timestamps: true }
 );

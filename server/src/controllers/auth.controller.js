@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const { User } = require("../models/user.model");
 const { generateToken } = require("../config/jwt");
+const crypto = require("crypto");
 
 // Pastikan menggunakan 'exports.register = ...'
 exports.register = async (req, res) => {
@@ -86,6 +87,61 @@ exports.login = async (req, res) => {
         role: user.role,
       },
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body.email || "").toLowerCase().trim();
+    const response = {
+      success: true,
+      message: "Jika email terdaftar, instruksi reset kata sandi telah dibuat.",
+    };
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(200).json(response);
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+
+    if (process.env.NODE_ENV !== "production") response.resetToken = resetToken;
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Token dan kata sandi minimal 8 karakter wajib diisi",
+      });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await User.findOne({
+      resetPasswordTokenHash: tokenHash,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Token reset tidak valid atau sudah kedaluwarsa",
+      });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordTokenHash = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+    res.status(200).json({ success: true, message: "Kata sandi berhasil diubah" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
