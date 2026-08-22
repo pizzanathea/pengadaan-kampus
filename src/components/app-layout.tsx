@@ -33,7 +33,7 @@ import {
   type NotificationItem,
 } from "@/lib/api";
 
-const MENU = [
+const MENU_SEMUA = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Pengajuan Barang", to: "/pengajuan", icon: FileText },
   { label: "Persetujuan", to: "/persetujuan", icon: CheckSquare },
@@ -41,7 +41,20 @@ const MENU = [
   { label: "Laporan", to: "/laporan", icon: BarChart3 },
 ] as const;
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+// Konfigurasi menu per role
+const MENU_ROLE: Record<string, string[]> = {
+  Pengaju: ["/pengajuan", "/pengadaan"],
+};
+
+// Helper: filter menu berdasarkan role
+function getMenuByRole(role: string) {
+  const allowed = MENU_ROLE[role];
+  if (!allowed) return MENU_SEMUA; // role lain tampilkan semua
+  return MENU_SEMUA.filter((m) => allowed.includes(m.to));
+}
+
+function SidebarContent({ onNavigate, role }: { onNavigate?: () => void; role: string }) {
+  const MENU = getMenuByRole(role);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -285,7 +298,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
     navigate({ to: "/" });
   };
 
-  const allMenuItems = [...MENU, { label: "Pengaturan", to: "/pengaturan", icon: Settings }];
+  const allMenuItems = [...MENU_SEMUA, { label: "Pengaturan", to: "/pengaturan", icon: Settings }];
   const judul =
     allMenuItems.find((m) => pathname === m.to || pathname.startsWith(m.to + "/"))?.label ?? "Dashboard";
 
@@ -294,7 +307,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       {/* Sidebar permanen pada desktop */}
       <aside className="hidden w-64 shrink-0 lg:block">
         <div className="fixed inset-y-0 left-0 w-64">
-          <SidebarContent />
+          <SidebarContent role={user.role} />
         </div>
       </aside>
 
@@ -302,7 +315,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       <Sheet open={drawer} onOpenChange={setDrawer}>
         <SheetContent side="left" className="w-[17rem] border-none bg-sidebar p-0">
           <SheetTitle className="sr-only">Navigasi utama</SheetTitle>
-          <SidebarContent onNavigate={() => setDrawer(false)} />
+          <SidebarContent role={user.role} onNavigate={() => setDrawer(false)} />
         </SheetContent>
       </Sheet>
 

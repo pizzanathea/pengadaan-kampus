@@ -54,6 +54,7 @@ function PengaturanPage() {
   const [profilData, setProfilData] = useState({ nama: "", email: "" });
   const [passwordData, setPasswordData] = useState({ lama: "", baru: "", konfirmasi: "" });
   const [daftarPengguna, setDaftarPengguna] = useState<any[]>([]);
+  const [currentRole, setCurrentRole] = useState<string>("");
 
   // State untuk form Tambah & Edit Pengguna
   const [formUserBaru, setFormUserBaru] = useState({
@@ -94,6 +95,7 @@ function PengaturanPage() {
       try {
         const parsedUser = JSON.parse(savedUser);
         setProfilData({ nama: parsedUser.nama || "", email: parsedUser.email || "" });
+        setCurrentRole(parsedUser.role || "");
       } catch (e) {
         console.error("Gagal parsing user dari localStorage");
       }
@@ -355,8 +357,12 @@ function PengaturanPage() {
         <div className="table-scroll pb-1">
           <TabsList className="w-max">
             <TabsTrigger value="saya">Profil Saya</TabsTrigger>
-            <TabsTrigger value="pengguna">Pengguna &amp; Role</TabsTrigger>
-            <TabsTrigger value="unit">Manajemen Unit</TabsTrigger>
+            {currentRole !== "Pengaju" && (
+              <>
+                <TabsTrigger value="pengguna">Pengguna &amp; Role</TabsTrigger>
+                <TabsTrigger value="unit">Manajemen Unit</TabsTrigger>
+              </>
+            )}
           </TabsList>
         </div>
 
