@@ -80,6 +80,20 @@ function BuatPengajuanPage() {
     apiFetchUnitList().then(setUnitList).catch(() => setUnitList([]));
   }, []);
 
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.nama) {
+          setNamaPengaju(parsed.nama);
+        }
+      } catch (e) {
+        console.error("Gagal mengambil nama pengaju dari localStorage");
+      }
+    }
+  }, []);
+
   const ubah = (key: number, patch: Partial<Baris>) =>
     setBaris((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
 
@@ -184,8 +198,9 @@ function BuatPengajuanPage() {
               <Input
                 id="pengaju"
                 value={namaPengaju}
-                onChange={(e) => setNamaPengaju(e.target.value)}
-                placeholder="Masukkan nama lengkap"
+                readOnly
+                disabled
+                className="bg-muted cursor-not-allowed"
                 required
               />
             </div>

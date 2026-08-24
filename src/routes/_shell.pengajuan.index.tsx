@@ -42,11 +42,23 @@ function PengajuanPage() {
   const [loading, setLoading] = useState(true);
   const [mengirimUlang, setMengirimUlang] = useState<string | null>(null);
   const [unitList, setUnitList] = useState<string[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [cari, setCari] = useState("");
   const [status, setStatus] = useState("semua");
   const [unit, setUnit] = useState("semua");
   const [tanggal, setTanggal] = useState("");
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Gagal mengambil data user dari localStorage");
+      }
+    }
+  }, []);
 
   const muatData = () => {
     setLoading(true);
@@ -107,14 +119,20 @@ function PengajuanPage() {
           p.pengaju?.toLowerCase().includes(q) ||
           p.barang?.some((b: any) => b.nama.toLowerCase().includes(q));
 
+        const cocokUser =
+          !currentUser ||
+          ["Super Admin", "Admin", "Persetujuan 1", "Persetujuan 2"].includes(currentUser.role) ||
+          p.pengaju === currentUser.nama;
+
         return (
           cocokCari &&
+          cocokUser &&
           (status === "semua" || p.status === status) &&
           (unit === "semua" || p.unit === unit) &&
           (!tanggal || p.tanggal === tanggal)
         );
       }),
-    [listPengajuan, cari, status, unit, tanggal],
+    [listPengajuan, cari, status, unit, tanggal, currentUser],
   );
 
   return (
