@@ -44,6 +44,8 @@ const MENU_SEMUA = [
 // Konfigurasi menu per role
 const MENU_ROLE: Record<string, string[]> = {
   Pengaju: ["/pengajuan", "/pengadaan"],
+  "Persetujuan 1": ["/dashboard", "/persetujuan"],
+  "Persetujuan 2": ["/dashboard", "/persetujuan"],
 };
 
 // Helper: filter menu berdasarkan role

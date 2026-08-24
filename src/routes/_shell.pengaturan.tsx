@@ -357,7 +357,7 @@ function PengaturanPage() {
         <div className="table-scroll pb-1">
           <TabsList className="w-max">
             <TabsTrigger value="saya">Profil Saya</TabsTrigger>
-            {currentRole !== "Pengaju" && (
+            {currentRole !== "Pengaju" && currentRole !== "Persetujuan 1" && currentRole !== "Persetujuan 2" && (
               <>
                 <TabsTrigger value="pengguna">Pengguna &amp; Role</TabsTrigger>
                 <TabsTrigger value="unit">Manajemen Unit</TabsTrigger>

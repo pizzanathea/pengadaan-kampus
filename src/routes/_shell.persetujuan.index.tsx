@@ -86,17 +86,42 @@ const ROLE_CONFIG: Record<
   },
 };
 
+// Mapping dari role database ke internal Role halaman ini
+function getRoleFromUser(userRole: string): Role {
+  if (userRole === "Persetujuan 2") return "persetujuan_2";
+  return "persetujuan_1";
+}
+
 function PersetujuanPage() {
   const { data: semuaPengajuan, loading, error } = usePengajuanData();
   const [unitList, setUnitList] = useState<string[]>([]);
   const [loadingUnit, setLoadingUnit] = useState(true);
 
+  // Baca role dari localStorage
+  const [isAdmin, setIsAdmin] = useState(false);
   const [role, setRole] = useState<Role>("persetujuan_1");
   const config = ROLE_CONFIG[role];
 
   const [status, setStatus] = useState(config.defaultStatus);
   const [unit, setUnit] = useState("semua");
   const [prioritas, setPrioritas] = useState("semua");
+
+  // Set role otomatis dari localStorage saat komponen mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        const dbRole: string = parsed.role || "";
+        setIsAdmin(dbRole === "Administrator" || dbRole === "Admin");
+        const mappedRole = getRoleFromUser(dbRole);
+        setRole(mappedRole);
+        setStatus(ROLE_CONFIG[mappedRole].defaultStatus);
+      } catch (e) {
+        console.error("Gagal parsing user dari localStorage");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let aktif = true;
@@ -137,18 +162,21 @@ function PersetujuanPage() {
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
-        <span className="font-medium text-muted-foreground">Testing sebagai role:</span>
-        <Select value={role} onValueChange={(v) => handleRoleChange(v as Role)}>
-          <SelectTrigger className="h-8 w-55 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="persetujuan_1">Persetujuan 1</SelectItem>
-            <SelectItem value="persetujuan_2">Persetujuan 2 (Keuangan)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Dropdown tampil sebagai role — hanya untuk Administrator/Admin */}
+      {isAdmin && (
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs">
+          <span className="font-medium text-muted-foreground">Tampil sebagai role:</span>
+          <Select value={role} onValueChange={(v) => handleRoleChange(v as Role)}>
+            <SelectTrigger className="h-8 w-55 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="persetujuan_1">Persetujuan 1</SelectItem>
+              <SelectItem value="persetujuan_2">Persetujuan 2 (Keuangan)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <PageHeader judul={config.judul} subtitle={config.subtitle} />
 
