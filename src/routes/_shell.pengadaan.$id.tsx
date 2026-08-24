@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb, EmptyState, Panel } from "@/components/ui-kit";
 import { StatusBadge } from "@/components/status-badge";
-import { DaftarBarang, InformasiPengajuan } from "@/components/pengajuan-detail";
+import { DaftarBarang, InformasiPengajuan, CatatanKeputusan } from "@/components/pengajuan-detail";
 import { Timeline } from "@/components/timeline";
 
 export const Route = createFileRoute("/_shell/pengadaan/$id")({
@@ -184,6 +184,7 @@ function DetailPengadaanPage() {
 
       <InformasiPengajuan p={mappedData} />
       <DaftarBarang p={mappedData} />
+      <CatatanKeputusan p={mappedData} />
     </>
   );
 }
