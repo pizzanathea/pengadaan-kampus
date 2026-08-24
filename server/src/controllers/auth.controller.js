@@ -6,7 +6,7 @@ const crypto = require("crypto");
 // Pastikan menggunakan 'exports.register = ...'
 exports.register = async (req, res) => {
   try {
-    const { nama, email, password, unit } = req.body;
+    const { nama, email, password, unit, role } = req.body;
 
     if (!nama || !email || !password || !unit) {
       return res.status(400).json({ success: false, message: "Semua kolom wajib diisi" });
@@ -25,7 +25,7 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       unit,
-      role: "Pengaju",
+      role: role || "Pengaju",
     });
 
     const savedUser = await newUser.save();

@@ -467,7 +467,7 @@
     },
   ];
 
-  export const ROLE_LIST = ["Pengaju", "Persetujuan 1", "Persetujuan 2", "Admin"];
+  export const ROLE_LIST = ["Pengaju", "Persetujuan 1", "Persetujuan 2", "Super Admin", "Admin"];
 
   export const NOTIFIKASI = [
     {

@@ -113,7 +113,7 @@ function PersetujuanPage() {
       try {
         const parsed = JSON.parse(savedUser);
         const dbRole: string = parsed.role || "";
-        setIsAdmin(dbRole === "Administrator" || dbRole === "Admin");
+        setIsAdmin(dbRole === "Administrator" || dbRole === "Admin" || dbRole === "Super Admin");
         const mappedRole = getRoleFromUser(dbRole);
         setRole(mappedRole);
         setStatus(ROLE_CONFIG[mappedRole].defaultStatus);
