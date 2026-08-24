@@ -4,9 +4,20 @@ exports.getNotifications = async (req, res) => {
   try {
     const { role, user } = req.query;
 
+    const targetRoles = [role];
+    if (role === "Persetujuan 1" || role === "Persetujuan 2") {
+      targetRoles.push("Approver");
+    }
+    if (role === "Admin" || role === "Super Admin") {
+      targetRoles.push("Admin Pengadaan");
+    }
+    if (role === "Super Admin") {
+      targetRoles.push("Admin");
+    }
+
     const filter = {
       $or: [
-        { role: role },
+        { role: { $in: targetRoles } },
         { namaPengaju: user },
         { role: "", namaPengaju: "" } // global notification
       ]
@@ -37,10 +48,21 @@ exports.markAllAsRead = async (req, res) => {
   try {
     const { role, user } = req.query;
 
+    const targetRoles = [role];
+    if (role === "Persetujuan 1" || role === "Persetujuan 2") {
+      targetRoles.push("Approver");
+    }
+    if (role === "Admin" || role === "Super Admin") {
+      targetRoles.push("Admin Pengadaan");
+    }
+    if (role === "Super Admin") {
+      targetRoles.push("Admin");
+    }
+
     const filter = {
       dibaca: false,
       $or: [
-        { role: role },
+        { role: { $in: targetRoles } },
         { namaPengaju: user },
         { role: "", namaPengaju: "" }
       ]
