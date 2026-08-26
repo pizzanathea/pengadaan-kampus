@@ -343,7 +343,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             </div>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-              <div className="relative hidden md:block">
+              {/* <div className="relative hidden md:block">
                 <Search
                   className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
                   aria-hidden
@@ -354,7 +354,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
                   aria-label="Cari"
                   className="w-44 pl-9 lg:w-64"
                 />
-              </div>
+              </div> */}
               <Button
                 variant="ghost"
                 size="icon"
